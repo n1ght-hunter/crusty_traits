@@ -203,11 +203,20 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                     #method_name::<T>
                 }
             }
-        });
+        })
+        .collect::<Vec<_>>();
+
+    let methods = if methods.len() > 0 {
+        quote! {
+            #(#methods),*,
+        }
+    } else {
+        quote! {}
+    };
 
     let vtable_creater = quote! {
     #vtable_ident {
-         #(#methods),*,
+        #methods
 
        drop: {
            unsafe extern "C" fn drop<T: #trait_ident>(arg_0: CRefMut<#vtable_ident>) {
