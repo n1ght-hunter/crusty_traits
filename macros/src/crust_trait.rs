@@ -1,14 +1,17 @@
+use heck::ToSnakeCase;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, BareFnArg, Field, ItemStruct, ItemTrait, LitStr, Token, TraitItem, TypeBareFn,
-    Visibility, parse_quote, spanned::Spanned,
+    Attribute, BareFnArg, Field, Ident, ItemStruct, ItemTrait, LitStr, Token, TraitItem, Type,
+    TypeBareFn, TypeParamBound, Visibility, parse_quote, spanned::Spanned,
 };
-
 
 pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
     let mut output = input.to_token_stream();
-    let vtable = create_vtable(&input);
+
+    let super_traits = get_super_traits(&input);
+
+    let vtable = create_vtable(&input, &super_traits);
     output.extend(
         vtable
             .as_ref()
@@ -17,6 +20,9 @@ pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
     );
 
     if let Ok(vtable) = &vtable {
+        impl_as_vtable_for_super_traits(&super_traits, &vtable.ident)
+            .for_each(|impl_block| output.extend(impl_block));
+
         let cdrop = impl_cdrop_for_vtable(vtable);
         output.extend(cdrop);
 
@@ -27,6 +33,87 @@ pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
     }
 
     output
+}
+
+const IGNORE_SUPER_TRAITS: &[&str] = &["Send", "Sync"];
+
+#[allow(dead_code)]
+struct SuperTrait {
+    ident: Ident,
+    vtable_ident: Ident,
+    vtable_ty: Type,
+    field_ident: Ident,
+    path: syn::Path,
+}
+
+type SuperTraits = Vec<SuperTrait>;
+
+fn get_super_traits(input: &ItemTrait) -> SuperTraits {
+    input
+        .supertraits
+        .iter()
+        .filter_map(|super_trait| {
+            if let TypeParamBound::Trait(trait_bound) = super_trait {
+                let ident = trait_bound.path.get_ident().unwrap();
+                if IGNORE_SUPER_TRAITS.contains(&ident.to_string().as_str()) {
+                    return None;
+                }
+                let vtable_ident =
+                    Ident::new(&format!("{}VTable", ident), proc_macro2::Span::call_site());
+                let field_ident = Ident::new(
+                    &format!("super_{}", ident.to_string().to_snake_case()),
+                    proc_macro2::Span::call_site(),
+                );
+                let vtable_ty = Type::Reference(syn::TypeReference {
+                    and_token: Default::default(),
+                    lifetime: Some(syn::Lifetime {
+                        apostrophe: proc_macro2::Span::call_site(),
+                        ident: Ident::new("static", proc_macro2::Span::call_site()),
+                    }),
+                    mutability: None,
+                    elem: Box::new(Type::Path(syn::TypePath {
+                        qself: None,
+                        path: syn::Path {
+                            leading_colon: None,
+                            segments: syn::punctuated::Punctuated::from_iter(vec![
+                                syn::PathSegment {
+                                    ident: vtable_ident.clone(),
+                                    arguments: syn::PathArguments::None,
+                                },
+                            ]),
+                        },
+                    })),
+                });
+                Some(SuperTrait {
+                    ident: ident.clone(),
+                    vtable_ident,
+                    field_ident,
+                    path: trait_bound.path.clone(),
+                    vtable_ty,
+                })
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
+fn impl_as_vtable_for_super_traits(
+    super_traits: &SuperTraits,
+    vtable_ident: &Ident,
+) -> impl Iterator<Item = TokenStream> {
+    super_traits.iter().map(move |super_trait| {
+        let field_ident = &super_trait.field_ident;
+        let vtable_ty = &super_trait.vtable_ty;
+
+        quote! {
+            impl AsVTable<#vtable_ty> for #vtable_ident {
+                fn as_vtable(&self) -> #vtable_ty {
+                    &self.#field_ident
+                }
+            }
+        }
+    })
 }
 
 fn impl_cdrop_for_vtable(vtable: &ItemStruct) -> TokenStream {
@@ -42,7 +129,7 @@ fn impl_cdrop_for_vtable(vtable: &ItemStruct) -> TokenStream {
     }
 }
 
-fn create_vtable(input: &ItemTrait) -> Result<ItemStruct, syn::Error> {
+fn create_vtable(input: &ItemTrait, super_traits: &SuperTraits) -> Result<ItemStruct, syn::Error> {
     let trait_ident = &input.ident;
     let repr_c: Attribute = parse_quote! {
        #[repr(C)]
@@ -57,7 +144,7 @@ fn create_vtable(input: &ItemTrait) -> Result<ItemStruct, syn::Error> {
         struct_token: syn::token::Struct {
             span: proc_macro2::Span::call_site(),
         },
-        ident: syn::Ident::new(
+        ident: Ident::new(
             &format!("{}VTable", input.ident),
             proc_macro2::Span::call_site(),
         ),
@@ -99,10 +186,27 @@ fn create_vtable(input: &ItemTrait) -> Result<ItemStruct, syn::Error> {
                 mutability: syn::FieldMutability::None,
                 ident: Some(method.sig.ident.clone()),
                 colon_token: None,
-                ty: syn::Type::BareFn(ty),
+                ty: Type::BareFn(ty),
             }
         })
         .collect::<Vec<_>>();
+
+    let super_trait_fields = super_traits
+        .iter()
+        .map(|super_trait| Field {
+            attrs: vec![],
+            vis: Visibility::Public(Default::default()),
+            mutability: syn::FieldMutability::None,
+            ident: Some(Ident::new(
+                &super_trait.field_ident.to_string(),
+                proc_macro2::Span::call_site(),
+            )),
+            colon_token: None,
+            ty: super_trait.vtable_ty.clone(),
+        })
+        .collect::<Vec<_>>();
+
+    fields.extend(super_trait_fields);
 
     let drop_field: Field = parse_quote!(
         /// A function pointer to the drop function for the trait
@@ -122,7 +226,7 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
 
-    let methods = input
+    let mut methods = input
         .items
         .iter()
         .filter_map(|i| {
@@ -150,7 +254,7 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                 .map(|arg| {
                     let name = arg.name.unwrap().0;
 
-                    if let syn::Type::Path(path) = &arg.ty {
+                    if let Type::Path(path) = &arg.ty {
                         let path = path.path.segments.first().map(|s| s.ident.to_string());
                         match path.as_ref().map(|s| s.as_str()) {
                             Some("CRef") => {
@@ -194,6 +298,26 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
             }
         })
         .collect::<Vec<_>>();
+
+    let super_trait_field = vtable
+        .fields
+        .iter()
+        .filter_map(|field| {
+            if let Type::Reference(ty) = &field.ty {
+                if let Type::Path(path) = &*ty.elem {
+                    let ident = field.ident.as_ref().unwrap();
+                    let super_vtable_ty = path.path.get_ident().unwrap();
+                    return Some(quote! {
+                        #ident: #super_vtable_ty::create_vtable::<T>()
+                    });
+                }
+            }
+
+            None
+        })
+        .collect::<Vec<_>>();
+
+    methods.extend(super_trait_field);
 
     let methods = if methods.len() > 0 {
         quote! {
@@ -248,7 +372,7 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
 
 fn map_inputs(
     inputs: &syn::punctuated::Punctuated<syn::FnArg, Token![,]>,
-    name: Option<syn::Ident>,
+    name: Option<Ident>,
 ) -> impl Iterator<Item = BareFnArg> {
     let name = name.unwrap_or(format_ident!("Self"));
     inputs.iter().map(move |arg| match arg {
@@ -256,17 +380,17 @@ fn map_inputs(
             let ty = recv.ty.as_ref().clone();
 
             match ty {
-                syn::Type::Reference(type_ref) if type_ref.mutability.is_none() => BareFnArg {
+                Type::Reference(type_ref) if type_ref.mutability.is_none() => BareFnArg {
                     attrs: recv.attrs.clone(),
                     name: None,
                     ty: parse_quote!(CRef<#name>),
                 },
-                syn::Type::Reference(_) => BareFnArg {
+                Type::Reference(_) => BareFnArg {
                     attrs: recv.attrs.clone(),
                     name: None,
                     ty: parse_quote!(CRefMut<#name>),
                 },
-                syn::Type::Path(_) => BareFnArg {
+                Type::Path(_) => BareFnArg {
                     attrs: recv.attrs.clone(),
                     name: None,
                     ty: parse_quote!(CRepr<#name>),
@@ -307,12 +431,12 @@ fn impl_trait_for_c_ref(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                     let ty = recv.ty.as_ref().clone();
 
                     match ty {
-                        syn::Type::Reference(type_ref) if type_ref.mutability.is_none() => {
+                        Type::Reference(type_ref) if type_ref.mutability.is_none() => {
                             quote! {
                                 self.as_cref()
                             }
                         }
-                        syn::Type::Reference(_) => {
+                        Type::Reference(_) => {
                             quote! {
                                 self.as_cref_mut()
                             }
