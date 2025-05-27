@@ -23,16 +23,86 @@ pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
         impl_as_vtable_for_super_traits(&super_traits, &vtable.ident)
             .for_each(|impl_block| output.extend(impl_block));
 
+        
         let cdrop = impl_cdrop_for_vtable(vtable);
         output.extend(cdrop);
-
+        
         let vtable_methods = impl_vtable_methods(&input, vtable);
         output.extend(vtable_methods);
         let c_ref_impl = impl_trait_for_c_ref(&input, vtable);
         output.extend(c_ref_impl);
+        let impl_c_ref = impl_trait_for_c_ref_where_as_vtable(&input, vtable);
+        output.extend(impl_c_ref);
     }
 
     output
+}
+
+fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
+    let trait_ident = &input.ident;
+    let vtable_ident = &vtable.ident;
+
+    let methods = input
+        .items
+        .clone()
+        .into_iter()
+        .filter_map(|i| {
+            if let TraitItem::Fn(fn_item) = i {
+                Some(fn_item)
+            } else {
+                None
+            }
+        })
+        .map(|mut f| {
+            let method_name = &f.sig.ident;
+            f.semi_token = None;
+
+            let inputs = f.sig.inputs.iter().map(|input| match input {
+                syn::FnArg::Receiver(recv) => {
+                    let ty = recv.ty.as_ref().clone();
+
+                    match ty {
+                        Type::Reference(type_ref) if type_ref.mutability.is_none() => {
+                            quote! {
+                                self.as_cref_with_methods(std::ptr::NonNull::from(methods))
+                            }
+                        }
+                        Type::Reference(_) => {
+                            quote! {
+                                self.as_cref_mut_with_methods(std::ptr::NonNull::from(methods))
+                            }
+                        }
+                        _ => syn::Error::new(ty.span(), "Receiver type must be a reference")
+                            .to_compile_error(),
+                    }
+                }
+                syn::FnArg::Typed(pat_type) => {
+                    let name = pat_type.pat.as_ref().clone();
+                    quote! {
+                        #name
+                    }
+                }
+            });
+
+            f.default = Some(parse_quote!({
+                let methods = self.as_vtable();
+                #[allow(unsafe_code)]
+                unsafe {
+                    (methods.#method_name)(#(#inputs),*)
+                }
+            }));
+
+            f.to_token_stream()
+        });
+
+    quote! {
+        impl<T> #trait_ident for CRepr<T>
+        where
+            T: AsVTable<&'static #vtable_ident> + CDrop,
+        {
+            #(#methods)*
+        }
+    }
 }
 
 const IGNORE_SUPER_TRAITS: &[&str] = &["Send", "Sync"];

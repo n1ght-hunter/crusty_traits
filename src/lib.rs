@@ -13,12 +13,20 @@ pub mod prelude {
     pub use crate::CRef;
     pub use crate::CRefMut;
     pub use crate::CDrop;
+    pub use crate::AsVTable;
 }
 
 /// A trait that represents dropping a Rust object in a C-compatible way.
 pub trait CDrop {
     /// Drops the object represented by the given `CRepr`.
     fn drop(repr: CRefMut<Self>);
+}
+
+
+/// A trait that provides a way to convert a type into a C-compatible vtable.
+pub trait AsVTable<T: ?Sized> {
+    /// Return a vtable for the type.
+    fn as_vtable(&self) -> T;
 }
 
 #[cfg(test)]

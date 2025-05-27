@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+clap = "4.5.38"
 crusty_traits_macros.workspace = true
+
+[dev-dependencies]
+cbindgen = {git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "b0c107b"}
 
 
 [lints]
@@ -20,6 +24,10 @@ proc-macro2 = "1.0.95"
 quote = "1.0.40"
 syn = "2.0.101"
 crusty_traits_macros = { path = "macros" }
+# cbindgen = "0.28.0"
+# fork to allow use of expand in stable toolchain by passing RUSTCBOOTSTRAP=1 to cargo expand
+# cbindgen = {git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "b0c107b"}
+cbindgen = { path = "../cbindgen" }
 
 [workspace.lints.clippy]
 doc_markdown = "warn"

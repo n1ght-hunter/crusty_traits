@@ -5,6 +5,11 @@ default:
     @just --list
 
 
+prepare: prepare-tests
+
+prepare-tests: 
+    cargo +nightly -Zscript ./scripts/build-c.rs
+
 test: cargo-test miri-test
 
 cargo-test:
@@ -12,3 +17,5 @@ cargo-test:
 
 miri-test:
     cargo +nightly miri test --all-features --all
+
+

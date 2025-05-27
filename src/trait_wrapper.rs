@@ -11,10 +11,32 @@ struct Inner<T: ?Sized> {
     pub ptr: NonNull<u8>,
 }
 
+impl<T: ?Sized> Inner<T> {
+    #[allow(unsafe_code)]
+    /// Creates a new `Inner` from a vtable and context.
+    pub unsafe fn map_vtable<U: ?Sized, F: FnOnce(&T) -> NonNull<U>>(self, map: F) -> Inner<U> {
+        Inner {
+            vtable: map(unsafe { self.vtable.as_ref() }),
+            ptr: self.ptr,
+        }
+    }
+}
+
 impl<T: ?Sized> Copy for Inner<T> {}
 impl<T: ?Sized> Clone for Inner<T> {
     fn clone(&self) -> Self {
         *self
+    }
+}
+
+impl<T> Deref for Inner<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        #[allow(unsafe_code)]
+        unsafe {
+            self.vtable.as_ref()
+        }
     }
 }
 
@@ -29,6 +51,17 @@ unsafe impl<T: Send + CDrop + ?Sized> Send for CRepr<T> {}
 #[allow(unsafe_code)]
 unsafe impl<T: Sync + CDrop + ?Sized> Sync for CRepr<T> {}
 
+impl<T: CDrop> Deref for CRepr<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        #[allow(unsafe_code)]
+        unsafe {
+            self.inner.vtable.as_ref()
+        }
+    }
+}
+
 impl<T: CDrop> CRepr<T> {
     /// Creates a new `CRepr` from a vtable and context.
     pub fn new_boxed<C>(vtable: &'static T, context: C) -> Self {
@@ -36,6 +69,18 @@ impl<T: CDrop> CRepr<T> {
         let vtable = NonNull::from(vtable);
         let context = NonNull::from(Box::leak(context)).cast();
 
+        #[allow(unsafe_code)]
+        // SAFETY: The vtable and context are valid and properly aligned.
+        unsafe {
+            Self::from_raw_parts(vtable, context)
+        }
+    }
+
+    /// Creates a new `CRepr` from a vtable and context.
+    /// # Safety
+    /// The caller must ensure that the vtable and context are valid and properly aligned.
+    #[allow(unsafe_code)]
+    pub unsafe fn from_raw_parts(vtable: NonNull<T>, context: NonNull<u8>) -> Self {
         Self {
             inner: Inner {
                 vtable,
@@ -46,6 +91,24 @@ impl<T: CDrop> CRepr<T> {
 }
 
 impl<T: CDrop + ?Sized> CRepr<T> {
+    /// Maps the vtable to a new type using the provided function.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_cref_with_methods<U: ?Sized>(&self, methods: NonNull<U>) -> CRef<U> {
+        CRef {
+            inner: unsafe { self.inner.map_vtable(|_| methods) },
+            phantom: std::marker::PhantomData,
+        }
+    }
+
+    /// Maps the vtable to a new type using the provided function.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_cref_mut_with_methods<U: ?Sized>(&mut self, methods: NonNull<U>) -> CRefMut<U> {
+        CRefMut {
+            inner: unsafe { self.inner.map_vtable(|_| methods) },
+            phantom: std::marker::PhantomData,
+        }
+    }
+
     /// Returns a pointer to the context.
     pub fn as_ptr(&self) -> *const u8 {
         self.inner.ptr.as_ptr()
@@ -90,6 +153,18 @@ pub struct CRef<'a, T: ?Sized> {
 }
 
 impl<'a, T: ?Sized> CRef<'a, T> {
+    /// Creates a new `CRef` from a vtable and context.
+    #[allow(unsafe_code)]
+    pub unsafe fn from_raw_parts(vtable: NonNull<T>, context: NonNull<u8>) -> Self {
+        Self {
+            inner: Inner {
+                vtable,
+                ptr: context,
+            },
+            phantom: std::marker::PhantomData,
+        }
+    }
+
     /// Returns a pointer to the context.
     pub fn as_ptr(&self) -> *const u8 {
         self.inner.ptr.as_ptr()
