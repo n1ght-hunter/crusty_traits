@@ -8,7 +8,7 @@ trait SuperBuffer {
 }
 
 #[crusty_trait]
-trait Buffer: SuperBuffer {
+trait Buffer: SuperBuffer + Send + Sync {
     fn as_slice(&self) -> *mut u8;
     fn extend(&mut self, amount: usize);
     fn capacity(&self) -> usize;
