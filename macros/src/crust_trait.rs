@@ -31,14 +31,14 @@ pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
         output.extend(vtable_methods);
         let c_ref_impl = impl_trait_for_c_ref(&input, vtable);
         output.extend(c_ref_impl);
-        let impl_c_ref = impl_trait_for_c_ref_where_as_vtable(&input, vtable);
+        let impl_c_ref = impl_trait_for_c_ref_where_as_vtable(&input, vtable, &super_traits);
         output.extend(impl_c_ref);
     }
 
     output
 }
 
-fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
+fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct, super_traits: &SuperTraits) -> TokenStream {
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
 
@@ -85,7 +85,7 @@ fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct) 
             });
 
             f.default = Some(parse_quote!({
-                let methods = self.as_vtable();
+                let methods: &'static #vtable_ident = self.as_vtable();
                 #[allow(unsafe_code)]
                 unsafe {
                     (methods.#method_name)(#(#inputs),*)
@@ -95,10 +95,16 @@ fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct) 
             f.to_token_stream()
         });
 
+    let super_trait_as_vtable = super_traits.iter().map(|super_trait| {
+        let super_trait_ident = &super_trait.vtable_ident;
+
+        quote! { + AsVTable<&'static #super_trait_ident> }
+    });
+
     quote! {
         impl<T> #trait_ident for CRepr<T>
         where
-            T: AsVTable<&'static #vtable_ident> + CDrop,
+            T: AsVTable<&'static #vtable_ident> + CDrop  #(#super_trait_as_vtable)*,
         {
             #(#methods)*
         }
