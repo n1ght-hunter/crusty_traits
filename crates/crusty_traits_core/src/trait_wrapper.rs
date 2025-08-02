@@ -1,3 +1,5 @@
+//! This module provides wrappers for C-compatible trait objects.
+
 use std::{
     ops::{Deref, DerefMut},
     ptr::NonNull,
