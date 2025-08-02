@@ -9,7 +9,10 @@ use syn::{
 pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
     let mut output = input.to_token_stream();
 
-    let super_traits = get_super_traits(&input);
+    let SuperTraitReturn {
+        super_traits,
+        ignore_bounds,
+    } = get_super_traits(&input);
 
     let vtable = create_vtable(&input, &super_traits);
     output.extend(
@@ -23,22 +26,27 @@ pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
         impl_as_vtable_for_super_traits(&super_traits, &vtable.ident)
             .for_each(|impl_block| output.extend(impl_block));
 
-        
         let cdrop = impl_cdrop_for_vtable(vtable);
         output.extend(cdrop);
-        
+
         let vtable_methods = impl_vtable_methods(&input, vtable);
         output.extend(vtable_methods);
         let c_ref_impl = impl_trait_for_c_ref(&input, vtable);
         output.extend(c_ref_impl);
-        let impl_c_ref = impl_trait_for_c_ref_where_as_vtable(&input, vtable, &super_traits);
+        let impl_c_ref =
+            impl_trait_for_c_ref_where_as_vtable(&input, vtable, &super_traits, &ignore_bounds);
         output.extend(impl_c_ref);
     }
 
     output
 }
 
-fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct, super_traits: &SuperTraits) -> TokenStream {
+fn impl_trait_for_c_ref_where_as_vtable(
+    input: &ItemTrait,
+    vtable: &ItemStruct,
+    super_traits: &SuperTraits,
+    ignore_bounds: &Vec<String>,
+) -> TokenStream {
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
 
@@ -101,10 +109,15 @@ fn impl_trait_for_c_ref_where_as_vtable(input: &ItemTrait, vtable: &ItemStruct, 
         quote! { + AsVTable<&'static #super_trait_ident> }
     });
 
+    let ignore_bounds = ignore_bounds.iter().map(|bound| {
+        let bound_ident = Ident::new(bound, proc_macro2::Span::call_site());
+        quote! { + #bound_ident }
+    });
+
     quote! {
         impl<T> #trait_ident for CRepr<T>
         where
-            T: AsVTable<&'static #vtable_ident> + CDrop  #(#super_trait_as_vtable)*,
+            T: AsVTable<&'static #vtable_ident> + CDrop  #(#super_trait_as_vtable)* #(#ignore_bounds)*,
         {
             #(#methods)*
         }
@@ -124,14 +137,21 @@ struct SuperTrait {
 
 type SuperTraits = Vec<SuperTrait>;
 
-fn get_super_traits(input: &ItemTrait) -> SuperTraits {
-    input
+struct SuperTraitReturn {
+    super_traits: SuperTraits,
+    ignore_bounds: Vec<String>,
+}
+
+fn get_super_traits(input: &ItemTrait) -> SuperTraitReturn {
+    let mut ignore_bounds = vec![];
+    let super_traits = input
         .supertraits
         .iter()
         .filter_map(|super_trait| {
             if let TypeParamBound::Trait(trait_bound) = super_trait {
                 let ident = trait_bound.path.get_ident().unwrap();
                 if IGNORE_SUPER_TRAITS.contains(&ident.to_string().as_str()) {
+                    ignore_bounds.push(ident.to_string());
                     return None;
                 }
                 let vtable_ident =
@@ -171,7 +191,12 @@ fn get_super_traits(input: &ItemTrait) -> SuperTraits {
                 None
             }
         })
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+
+    SuperTraitReturn {
+        super_traits,
+        ignore_bounds,
+    }
 }
 
 fn impl_as_vtable_for_super_traits(
