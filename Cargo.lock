@@ -141,6 +141,10 @@ dependencies = [
 [[package]]
 name = "crusty_traits_types"
 version = "0.1.0"
+dependencies = [
+ "crusty_traits_core",
+ "crusty_traits_macros",
+]
 
 [[package]]
 name = "equivalent"

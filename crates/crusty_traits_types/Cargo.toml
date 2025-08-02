@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+crusty_traits_macros.workspace = true
+crusty_traits_core.workspace = true
+
 
 [lints]
 workspace = true
