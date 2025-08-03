@@ -1,5 +1,3 @@
-//! This module provides wrappers for C-compatible trait objects.
-
 use std::{
     ops::{Deref, DerefMut},
     ptr::NonNull,
@@ -104,7 +102,10 @@ impl<T: CDrop + ?Sized> CRepr<T> {
 
     /// Maps the vtable to a new type using the provided function.
     #[allow(unsafe_code)]
-    pub unsafe fn as_cref_mut_with_methods<U: ?Sized>(&mut self, methods: NonNull<U>) -> CRefMut<U> {
+    pub unsafe fn as_cref_mut_with_methods<U: ?Sized>(
+        &mut self,
+        methods: NonNull<U>,
+    ) -> CRefMut<U> {
         CRefMut {
             inner: unsafe { self.inner.map_vtable(|_| methods) },
             phantom: std::marker::PhantomData,
