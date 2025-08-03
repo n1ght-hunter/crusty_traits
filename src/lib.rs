@@ -1,7 +1,7 @@
 //! This crate provides a means of creating C-compatible vtables for Rust traits.
 //!
 
-pub use crusty_traits_core::{trait_wrapper::*, *};
+pub use crusty_traits_core::*;
 pub use crusty_traits_macros::crusty_trait;
 
 /// Modules that exports all the necessary types and traits for FFI.
