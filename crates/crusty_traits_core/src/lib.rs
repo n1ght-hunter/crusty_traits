@@ -1,9 +1,9 @@
 //! This module provides core traits and types for creating C-compatible vtables for Rust traits.
 //! It includes the `CRef`, `CRefMut`, and `CDrop` traits
 
-use crate::trait_wrapper::CRefMut;
+mod trait_wrapper;
 
-pub mod trait_wrapper;
+pub use trait_wrapper::*;
 
 /// A trait that represents dropping a Rust object in a C-compatible way.
 pub trait CDrop {
