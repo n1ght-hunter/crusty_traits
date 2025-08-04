@@ -40,7 +40,7 @@ impl Buffer for Vec<u8> {
 }
 
 #[test]
-fn test_crusty_trait() {
+fn super_trait() {
     let buffer: Vec<u8> = Vec::new();
     let mut buffer = BufferVTable::new_boxed(buffer);
     let test = buffer.test();
