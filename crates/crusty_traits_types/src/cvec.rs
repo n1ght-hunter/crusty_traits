@@ -71,14 +71,9 @@ mod tests {
             let slice = cvec.as_slice();
             let slice = unsafe { std::slice::from_raw_parts_mut(slice, cvec.len()) };
 
-            println!("slice : {:?}", slice);
-
-            // for i in 0..3 {
-            //     slice[i] = TestData {
-            //         string: "test".to_string(),
-            //         number: 42,
-            //     };
-            // }
+            assert!(slice.len() > 0);
+            assert_eq!(slice[0].string, "Hello");
+            assert_eq!(slice[0].number, 42);
         }
     }
 }
