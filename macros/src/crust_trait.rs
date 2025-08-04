@@ -1,10 +1,14 @@
+mod utils;
+
 use heck::ToSnakeCase;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, BareFnArg, Field, Ident, ItemStruct, ItemTrait, LitStr, Token, TraitItem, Type,
-    TypeBareFn, TypeParamBound, Visibility, parse_quote, spanned::Spanned,
+    Attribute, BareFnArg, Field, GenericParam, Ident, ItemStruct, ItemTrait, LitStr, Token,
+    TraitItem, Type, TypeBareFn, TypeParamBound, Visibility, parse_quote, spanned::Spanned,
 };
+
+use utils::map_genrics_ident;
 
 pub fn impl_crusty_trait(input: ItemTrait) -> TokenStream {
     let mut output = input.to_token_stream();
@@ -49,6 +53,7 @@ fn impl_trait_for_c_ref_where_as_vtable(
 ) -> TokenStream {
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
+    let generics = &input.generics;
 
     let methods = input
         .items
@@ -93,7 +98,7 @@ fn impl_trait_for_c_ref_where_as_vtable(
             });
 
             f.default = Some(parse_quote!({
-                let methods: &'static #vtable_ident = self.as_vtable();
+                let methods: &'static #vtable_ident #generics = self.as_vtable();
                 #[allow(unsafe_code)]
                 unsafe {
                     (methods.#method_name)(#(#inputs),*)
@@ -114,10 +119,24 @@ fn impl_trait_for_c_ref_where_as_vtable(
         quote! { + #bound_ident }
     });
 
+    let mut start_gen = generics.clone();
+
+    start_gen.params.insert(0, parse_quote!(GEN));
+
+    let static_generics = generics.params.iter().map(|param| {
+        if let syn::GenericParam::Type(ty) = param {
+            let ident = &ty.ident;
+            quote! { #ident: 'static }
+        } else {
+            quote! {}
+        }
+    });
+
     quote! {
-        impl<T> #trait_ident for CRepr<T>
+        impl #start_gen #trait_ident #generics for CRepr<GEN>
         where
-            T: AsVTable<&'static #vtable_ident> + CDrop  #(#super_trait_as_vtable)* #(#ignore_bounds)*,
+            GEN: AsVTable<&'static #vtable_ident #generics> + CDrop  #(#super_trait_as_vtable)* #(#ignore_bounds)*,
+            #(#static_generics),*
         {
             #(#methods)*
         }
@@ -324,8 +343,72 @@ fn create_vtable(input: &ItemTrait, super_traits: &SuperTraits) -> Result<ItemSt
 }
 
 fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
+    let genrics = &input.generics;
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
+    let mut renamed_generics = genrics.clone();
+
+    let mut static_generics = genrics.clone();
+
+    static_generics.params.iter_mut().for_each(|param| {
+        if let GenericParam::Type(type_param) = param {
+            if !type_param.bounds.iter().any(|bound| {
+                if let TypeParamBound::Lifetime(lifetime) = bound {
+                    lifetime.ident == "static"
+                } else {
+                    false
+                }
+            }) {
+                type_param.bounds.push(parse_quote!('static));
+            }
+        }
+    });
+
+    renamed_generics.params.iter_mut().for_each(|g| {
+        map_genrics_ident(g, &utils::map_method_ident);
+    });
+
+    let mut method_generics = renamed_generics.clone();
+
+    method_generics
+        .params
+        .push(parse_quote!(GEN: #trait_ident #renamed_generics));
+
+    let mut method_generics_names = genrics
+        .params
+        .iter()
+        .map(|p| match p {
+            GenericParam::Lifetime(lifetime) => {
+                let ident = &lifetime.lifetime.ident;
+                quote! { #ident }
+            }
+            GenericParam::Type(type_param) => {
+                let ident = &type_param.ident;
+                quote! { #ident }
+            }
+            GenericParam::Const(const_param) => {
+                let ident = &const_param.ident;
+                quote! { #ident }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    method_generics_names.push(Ident::new("GEN", proc_macro2::Span::call_site()).to_token_stream());
+
+    let mapper = |ty: &mut syn::TypePath| {
+        if genrics.params.iter().any(|p| {
+            if let GenericParam::Type(type_param) = p
+                && let Some(ty_path) = ty.path.get_ident()
+            {
+                &type_param.ident == ty_path
+            } else {
+                false
+            }
+        }) {
+            ty.path.segments.first_mut().unwrap().ident =
+                utils::map_method_ident(ty.path.segments.first_mut().unwrap().ident.clone());
+        }
+    };
 
     let mut methods = input
         .items
@@ -339,15 +422,18 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
         })
         .map(|f| {
             let method_name = &f.sig.ident;
-            let output = &f.sig.output;
-            let inputs = map_inputs(&f.sig.inputs, Some(vtable_ident.clone()))
-                .enumerate()
-                .map(|(i, mut arg)| {
-                    let name = format_ident!("arg_{}", i);
-                    arg.name = Some((name, Default::default()));
-                    arg
-                })
-                .collect::<Vec<_>>();
+            let inputs = map_inputs(
+                &f.sig.inputs,
+                Some(quote! { #vtable_ident #renamed_generics}),
+            )
+            .enumerate()
+            .map(|(i, mut arg)| {
+                let name = format_ident!("arg_{}", i);
+                arg.name = Some((name, Default::default()));
+                utils::map_ty(&mut arg.ty, &mapper);
+                arg
+            })
+            .collect::<Vec<_>>();
 
             let pass_in_args = inputs
                 .clone()
@@ -360,12 +446,12 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                         match path.as_ref().map(|s| s.as_str()) {
                             Some("CRef") => {
                                 quote! {
-                                    &*(#name.as_ptr() as *const T)
+                                    &*(#name.as_ptr() as *const GEN)
                                 }
                             }
                             Some("CRefMut") => {
                                 quote! {
-                                    &mut *(#name.as_ptr() as *mut T)
+                                    &mut *(#name.as_ptr() as *mut GEN)
                                 }
                             }
                             _ => {
@@ -382,19 +468,25 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                 })
                 .collect::<Vec<_>>();
 
+            let mut output = f.sig.output.clone();
+
+            if let syn::ReturnType::Type(_, ref mut ty) = output {
+                utils::map_ty(ty, &mapper);
+            }
+
             quote! {
                 #method_name: {
-                    unsafe extern "C" fn #method_name<T: #trait_ident>(
+                    unsafe extern "C" fn #method_name #method_generics(
                         #(#inputs),*
                     ) #output {
                         #[allow(unsafe_code)]
                         unsafe {
-                            T::#method_name(
+                            GEN::#method_name(
                                 #(#pass_in_args),*
                             )
                         }
                     }
-                    #method_name::<T>
+                    #method_name::<#(#method_generics_names),*>
                 }
             }
         })
@@ -409,7 +501,7 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
                     let ident = field.ident.as_ref().unwrap();
                     let super_vtable_ty = path.path.get_ident().unwrap();
                     return Some(quote! {
-                        #ident: #super_vtable_ty::create_vtable::<T>()
+                        #ident: #super_vtable_ty::create_vtable::<GEN>()
                     });
                 }
             }
@@ -433,37 +525,62 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
         #methods
 
        drop: {
-           unsafe extern "C" fn drop<T: #trait_ident>(arg_0: CRefMut<#vtable_ident>) {
+           unsafe extern "C" fn drop #method_generics(arg_0: CRefMut<#vtable_ident #renamed_generics>) {
                #[allow(unsafe_code)]
                unsafe {
-                   ::core::mem::drop(Box::from_raw(arg_0.as_ptr() as *mut T));
+                   ::core::mem::drop(Box::from_raw(arg_0.as_ptr() as *mut GEN));
                }
            }
-           drop::<T>
+           drop::<#(#method_generics_names),*>
        },
       }};
 
+    let mut genrics_params = renamed_generics.clone();
+
+    genrics_params
+        .params
+        .push(parse_quote!(GEN: #trait_ident #renamed_generics + 'static));
+
+    let genrics_names = genrics_params
+        .params
+        .iter()
+        .map(|p| match p {
+            GenericParam::Lifetime(lifetime) => {
+                let ident = &lifetime.lifetime.ident;
+                quote! { #ident }
+            }
+            GenericParam::Type(type_param) => {
+                let ident = &type_param.ident;
+                quote! { #ident }
+            }
+            GenericParam::Const(const_param) => {
+                let ident = &const_param.ident;
+                quote! { #ident }
+            }
+        })
+        .collect::<Vec<_>>();
+
     quote! {
-        impl #vtable_ident {
-            /// Creates a new vtable for the type T that implements the trait
-            pub fn new_boxed<T: #trait_ident + 'static>(input: T) -> CRepr<#vtable_ident> {
-                let vtable  = #vtable_ident::create_vtable::<T>();
+        impl #static_generics #vtable_ident #genrics {
+            /// Creates a new vtable for the type GEN that implements the trait
+            pub fn new_boxed<GEN: #trait_ident #genrics + 'static>(input: GEN) -> CRepr<#vtable_ident #genrics> {
+                let vtable  = #vtable_ident::create_vtable::<GEN>();
                 CRepr::new_boxed(vtable, input)
             }
 
-            /// Creates a new vtable for the type T then store in a static variable in a hea
-            pub fn create_vtable<T: #trait_ident + 'static>() -> &'static #vtable_ident {
-                   static FN_MAP: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<std::any::TypeId, &'static #vtable_ident>>> =
+            /// Creates a new vtable for the type GEN then store in a static variable in the heap
+            pub fn create_vtable<GEN: #trait_ident #genrics + 'static>() -> &'static #vtable_ident #genrics {
+                   static FN_MAP: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<std::any::TypeId, &'static (dyn std::any::Any + Send + Sync)>>> =
                         std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
 
-                    let type_id = std::any::TypeId::of::<T>();
+                    let type_id = std::any::TypeId::of::<GEN>();
 
                     let mut map = FN_MAP.lock().unwrap();
                     let entry = map.entry(type_id).or_insert_with(|| {
                         let vtable = Box::new(#vtable_creater);
                         Box::leak(vtable)
                     });
-                    &entry
+                    entry.downcast_ref().unwrap()
 
 
             }
@@ -473,10 +590,10 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
 
 fn map_inputs(
     inputs: &syn::punctuated::Punctuated<syn::FnArg, Token![,]>,
-    name: Option<Ident>,
+    name: Option<TokenStream>,
 ) -> impl Iterator<Item = BareFnArg> {
-    let name = name.unwrap_or(format_ident!("Self"));
-    inputs.iter().map(move |arg| match arg {
+    let name = name.unwrap_or_else(|| quote! { Self });
+    inputs.iter().map(move |arg: &syn::FnArg| match arg {
         syn::FnArg::Receiver(recv) => {
             let ty = recv.ty.as_ref().clone();
 
@@ -512,6 +629,7 @@ fn map_inputs(
 fn impl_trait_for_c_ref(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
+    let generics = &input.generics;
     let methods = input
         .items
         .clone()
@@ -567,7 +685,7 @@ fn impl_trait_for_c_ref(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
         });
 
     quote! {
-        impl #trait_ident for CRepr<#vtable_ident> {
+        impl #generics #trait_ident #generics for CRepr<#vtable_ident  #generics> {
             #(#methods)*
         }
     }
