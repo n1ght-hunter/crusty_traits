@@ -1,0 +1,18 @@
+[package]
+name = "scripts"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cbindgen.workspace = true
+cc.workspace = true
+libloading.workspace = true
+
+
+[[bin]]
+name = "build_c"
+path = "build_c.rs"
+
+[[bin]]
+name = "build_cbindgen"
+path = "build_cbindgen.rs"

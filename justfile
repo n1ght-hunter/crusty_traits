@@ -1,4 +1,5 @@
 
+mod scripts "scripts/scripts.just"
 
 # list all available recipes
 default: 
