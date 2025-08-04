@@ -124,7 +124,7 @@ fn impl_trait_for_c_ref_where_as_vtable(
     start_gen.params.insert(0, parse_quote!(GEN));
 
     let static_generics = generics.params.iter().map(|param| {
-        if let syn::GenericParam::Type(ty) = param {
+        if let GenericParam::Type(ty) = param {
             let ident = &ty.ident;
             quote! { #ident: 'static }
         } else {
