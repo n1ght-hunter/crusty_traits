@@ -3,13 +3,14 @@ include_version = true
 braces = "SameLine"
 line_length = 80
 tab_width = 4
-language = "C"
-style = "Both"
+language = "c"
+style = "both"
+
 
 [parse]
 parse_deps = true
-include = ["crusty_traits"]
+include = ["shared_lib"]
 
 
 [parse.expand]
-crates = ["crusty_traits"]
+crates = ["shared_lib"]
