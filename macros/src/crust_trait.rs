@@ -410,6 +410,12 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
         }
     };
 
+    let map_genrics = |param: &mut syn::Type| {
+        if let Type::Path(type_path) = param {
+            mapper(type_path);
+        }
+    };
+
     let mut methods = input
         .items
         .iter()
@@ -472,6 +478,7 @@ fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> TokenStream {
 
             if let syn::ReturnType::Type(_, ref mut ty) = output {
                 utils::map_ty(ty, &mapper);
+                utils::map_ty_genrics(ty, &map_genrics);
             }
 
             quote! {
