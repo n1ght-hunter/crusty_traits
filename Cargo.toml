@@ -16,6 +16,7 @@ workspace = true
 
 [workspace]
 members = [
+    "crates/crusty_trait_macro",
     "crates/crusty_traits_core",
     "crates/crusty_traits_types",
     "macros",
@@ -29,7 +30,7 @@ crusty_traits_macros = { path = "macros" }
 crusty_traits_core = { path = "crates/crusty_traits_core" }
 # cbindgen = "0.28.0"
 # fork to allow use of expand in stable toolchain by passing RUSTCBOOTSTRAP=1 to cargo expand
-cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "71e2875" }
+cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
 
 
 proc-macro2 = "1"
@@ -38,7 +39,7 @@ syn = "2"
 
 cc = "1.2"
 libloading = "0.8"
-
+prettyplease = "0.2.37"
 
 [workspace.lints.clippy]
 doc_markdown = "warn"

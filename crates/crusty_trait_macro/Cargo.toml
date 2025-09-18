@@ -1,0 +1,19 @@
+[package]
+name = "crusty_trait_macro"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+heck = "0.5.0"
+proc-macro2.workspace = true
+quote.workspace = true
+syn = {workspace = true, features = ["full"]}
+
+
+[dev-dependencies]
+syn.workspace = true
+syn.features = ["full", "extra-traits"]
+prettyplease.workspace = true
+
+[lints]
+workspace = true
