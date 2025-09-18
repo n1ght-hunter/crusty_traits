@@ -43,9 +43,12 @@ pub fn impl_crusty_trait(input: syn::ItemTrait) -> syn::File {
         super_trait::impl_as_vtable_for_super_traits(&super_traits.super_traits, &vtable)
             .collect::<Vec<_>>();
 
+    let cdrop_impl = cdrop::impl_cdrop_for_vtable(&vtable);
+
     output.items.push(input.into());
     output.items.push(vtable.into());
     output.items.extend(as_vtable_impls);
+    output.items.push(cdrop_impl);
 
     output
 }
@@ -211,6 +214,15 @@ mod tests {
             generated_vtable, expected_vtable,
             "Generated vtable does not match expected vtable"
         );
+
+        let expected_impl: syn::ItemImpl = parse_quote! {
+            impl CDrop for MyTraitVTable {
+                fn drop(repr: CRefMut<Self>) {
+                    unsafe { (repr.get_vtable().drop)(repr) }
+                }
+            }
+        };
+        assert_eq!(output.items[2], syn::Item::Impl(expected_impl.clone()));
     }
 
     #[test]
@@ -260,5 +272,14 @@ mod tests {
             "Generated impl for SuperTrait2 does not match expected: got \n{} \nexpected \n{}",
             expected_as_vtable_2, expected_as_vtable_2_ref
         );
+
+        let expected_impl: syn::ItemImpl = parse_quote! {
+            impl<T> CDrop for MyTraitVTable<T> {
+                fn drop(repr: CRefMut<Self>) {
+                    unsafe { (repr.get_vtable().drop)(repr) }
+                }
+            }
+        };
+        assert_eq!(output.items[4], syn::Item::Impl(expected_impl.clone()));
     }
 }
