@@ -39,3 +39,20 @@ pub fn map_vec_to_generics(vec: &Vec<Ident>) -> TokenStream {
         quote! { < #( #generics ),* > }
     }
 }
+
+#[cfg(test)]
+pub mod test_utils {
+
+    pub fn item_to_file(item: syn::Item) -> syn::File {
+        syn::File {
+            shebang: None,
+            attrs: vec![],
+            items: vec![item],
+        }
+    }
+
+    pub fn item_to_pretty_string(item: syn::Item) -> String {
+        let file = item_to_file(item);
+        prettyplease::unparse(&file)
+    }
+}

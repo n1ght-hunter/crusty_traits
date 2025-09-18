@@ -9,6 +9,7 @@ use syn::{
 };
 use utils::{doc_attribute, repr_c_attribute};
 
+mod cdrop;
 mod super_trait;
 mod utils;
 
@@ -175,21 +176,10 @@ fn map_inputs(
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::test_utils::item_to_pretty_string;
+
     use super::*;
     use syn::parse_quote;
-
-    fn item_to_file(item: syn::Item) -> syn::File {
-        syn::File {
-            shebang: None,
-            attrs: vec![],
-            items: vec![item],
-        }
-    }
-
-    fn item_to_pretty_string(item: syn::Item) -> String {
-        let file = item_to_file(item);
-        prettyplease::unparse(&file)
-    }
 
     #[test]
     fn basic_test() {
@@ -214,9 +204,8 @@ mod tests {
         };
 
         // Compare using pretty-printed representation to avoid structural metadata issues
-        let generated_vtable = prettyplease::unparse(&item_to_file(output.items[1].clone()));
-        let expected_vtable =
-            prettyplease::unparse(&item_to_file(syn::Item::Struct(expected_vtable.clone())));
+        let generated_vtable = item_to_pretty_string(output.items[1].clone());
+        let expected_vtable = item_to_pretty_string(syn::Item::Struct(expected_vtable.clone()));
 
         assert_eq!(
             generated_vtable, expected_vtable,
