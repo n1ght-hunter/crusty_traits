@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 crusty_traits_macros.workspace = true
 crusty_traits_core.workspace = true
+crusty_traits_types.workspace = true
 
 [dev-dependencies]
 libloading.workspace = true
@@ -29,6 +30,8 @@ members = [
 crusty_traits_macros = { path = "macros" }
 crusty_traits_core = { path = "crates/crusty_traits_core" }
 crusty_trait_macro = { path = "crates/crusty_trait_macro" }
+crusty_traits_types = { path = "crates/crusty_traits_types" }
+crusty_traits = { path = "." }
 # cbindgen = "0.28.0"
 # fork to allow use of expand in stable toolchain by passing RUSTCBOOTSTRAP=1 to cargo expand
 cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
@@ -41,7 +44,7 @@ syn = "2"
 cc = "1.2"
 libloading = "0.8"
 prettyplease = "0.2.37"
-serde = "1"
+serde = "=1.0.188"  # Pin to older version compatible with the fork
 
 [workspace.lints.clippy]
 doc_markdown = "warn"
