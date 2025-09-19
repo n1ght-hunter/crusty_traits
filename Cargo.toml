@@ -41,6 +41,7 @@ syn = "2"
 cc = "1.2"
 libloading = "0.8"
 prettyplease = "0.2.37"
+serde = "1"
 
 [workspace.lints.clippy]
 doc_markdown = "warn"

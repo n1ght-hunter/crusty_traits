@@ -164,6 +164,7 @@ version = "0.1.0"
 dependencies = [
  "crusty_traits_core",
  "crusty_traits_macros",
+ "serde",
 ]
 
 [[package]]
