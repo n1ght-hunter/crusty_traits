@@ -14,6 +14,8 @@ pub mod prelude {
     pub use crate::crusty_trait;
 }
 
+pub use crusty_traits_types as types;
+
 #[cfg(test)]
 mod tests {
     use super::*;
