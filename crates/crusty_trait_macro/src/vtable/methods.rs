@@ -172,7 +172,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
             if let Type::Reference(ty) = &field.ty {
                 if let Type::Path(path) = &*ty.elem {
                     let ident = field.ident.as_ref().unwrap();
-                    let super_vtable_ty = path.path.get_ident().unwrap();
+                    let super_vtable_ty = path.path.segments.first().unwrap().ident.clone();
                     return Some(quote! {
                         #ident: #super_vtable_ty::create_vtable::<GEN>()
                     });

@@ -1,5 +1,5 @@
 use quote::quote;
-use syn::{Ident, ItemTrait, Type};
+use syn::{Ident, ItemTrait, Type, parse_quote};
 
 use crate::{
     IGNORE_SUPER_TRAITS,
@@ -48,25 +48,6 @@ pub fn get_super_traits(input: &ItemTrait) -> syn::Result<SuperTraitReturn> {
             let vtable_ident = map_vtable_ident(ident.clone());
             let field_ident = map_field_ident(ident.clone());
 
-            let vtable_ty = Type::Reference(syn::TypeReference {
-                and_token: Default::default(),
-                lifetime: Some(syn::Lifetime {
-                    apostrophe: proc_macro2::Span::call_site(),
-                    ident: Ident::new("static", proc_macro2::Span::call_site()),
-                }),
-                mutability: None,
-                elem: Box::new(Type::Path(syn::TypePath {
-                    qself: None,
-                    path: syn::Path {
-                        leading_colon: None,
-                        segments: syn::punctuated::Punctuated::from_iter(vec![syn::PathSegment {
-                            ident: vtable_ident,
-                            arguments: syn::PathArguments::None,
-                        }]),
-                    },
-                })),
-            });
-
             let mut generics = vec![];
             if let Some(segment) = trait_bound.path.segments.first()
                 && let syn::PathArguments::AngleBracketed(angle_bracketed) = &segment.arguments
@@ -83,6 +64,31 @@ pub fn get_super_traits(input: &ItemTrait) -> syn::Result<SuperTraitReturn> {
                     }
                 }
             }
+
+            let vtable_ty = Type::Reference(syn::TypeReference {
+                and_token: Default::default(),
+                lifetime: Some(syn::Lifetime {
+                    apostrophe: proc_macro2::Span::call_site(),
+                    ident: Ident::new("static", proc_macro2::Span::call_site()),
+                }),
+                mutability: None,
+                elem: Box::new(Type::Path(syn::TypePath {
+                    qself: None,
+                    path: syn::Path {
+                        leading_colon: None,
+                        segments: syn::punctuated::Punctuated::from_iter(vec![syn::PathSegment {
+                            ident: vtable_ident,
+                            arguments: if generics.is_empty() {
+                                syn::PathArguments::None
+                            } else {
+                                syn::PathArguments::AngleBracketed(
+                                    parse_quote!(< #( #generics ),* >),
+                                )
+                            },
+                        }]),
+                    },
+                })),
+            });
 
             SuperTrait {
                 ident: ident.clone(),
@@ -122,7 +128,6 @@ pub fn impl_as_vtable_for_super_traits(
     super_traits.iter().map(move |super_trait| {
         let field_ident = &super_trait.field_ident;
         let vtable_ty = &super_trait.vtable_ty;
-        let super_trait_generics = map_vec_to_generics(&super_trait.generics);
         let generics = if super_trait.generics.is_empty() && vtable.generics.params.is_empty() {
             quote! {}
         } else {
@@ -147,8 +152,8 @@ pub fn impl_as_vtable_for_super_traits(
         let vtable_ident = &vtable.ident;
 
         syn::parse_quote! {
-            impl #generics AsVTable<#vtable_ty #super_trait_generics> for #vtable_ident #generics {
-                fn as_vtable(&self) -> #vtable_ty #super_trait_generics {
+                impl #generics AsVTable<#vtable_ty> for #vtable_ident #generics {
+                fn as_vtable(&self) -> #vtable_ty {
                     &self.#field_ident
                 }
             }
@@ -252,7 +257,9 @@ mod tests {
             trait MyTrait<T>: SuperTrait1 + SuperTrait2<T> + Send {
                 fn my_method(&self, value: T);
             }
-        }).unwrap().super_traits;
+        })
+        .unwrap()
+        .super_traits;
         let impls = impl_as_vtable_for_super_traits(&super_traits, &vtable).collect::<Vec<_>>();
 
         let expected_1: syn::ItemImpl = parse_quote! {
