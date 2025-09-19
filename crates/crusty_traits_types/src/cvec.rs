@@ -1,23 +1,20 @@
 //! C-compatible vector types and traits. that converts to the rust Vec type.
+//!
 use crusty_traits_core::*;
 use crusty_traits_macros::crusty_trait;
 
+use crate::cslice::{CSlice, CSliceVTable};
+
 #[crusty_trait]
-trait CVec<V> {
+trait CVec<V>: CSlice<V> {
     fn push(&mut self, value: V);
-    fn as_slice(&self) -> *mut V;
     fn extend(&mut self, amount: usize);
     fn capacity(&self) -> usize;
-    fn len(&self) -> usize;
 }
 
 impl<T> CVec<T> for Vec<T> {
     fn push(&mut self, value: T) {
         self.push(value);
-    }
-
-    fn as_slice(&self) -> *mut T {
-        self.as_ptr() as *mut T
     }
 
     fn extend(&mut self, amount: usize) {
@@ -27,16 +24,13 @@ impl<T> CVec<T> for Vec<T> {
     fn capacity(&self) -> usize {
         self.capacity()
     }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
 }
 
 #[cfg(test)]
 mod tests {
     #![allow(unsafe_code)]
     use super::*;
+    use crate::cslice::CSliceExt;
 
     #[repr(C)]
     #[derive(Debug, Clone)]
@@ -57,11 +51,6 @@ mod tests {
         assert_eq!(cvec.len(), 0);
         assert!(cvec.capacity() >= 10);
 
-        // Check if the slice is valid
-        {
-            let slice = cvec.as_slice();
-            assert!(!slice.is_null());
-        }
         cvec.push(TestData {
             string: "Hello".to_string(),
             number: 42,
@@ -69,7 +58,6 @@ mod tests {
 
         {
             let slice = cvec.as_slice();
-            let slice = unsafe { std::slice::from_raw_parts_mut(slice, cvec.len()) };
 
             assert!(slice.len() > 0);
             assert_eq!(slice[0].string, "Hello");
