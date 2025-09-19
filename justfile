@@ -6,10 +6,8 @@ default:
     @just --list
 
 
-prepare: prepare-tests
+prepare:
 
-prepare-tests: 
-    cargo +nightly -Zscript ./scripts/build-c.rs
 
 test: cargo-test miri-test
 
