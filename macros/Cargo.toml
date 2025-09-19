@@ -7,10 +7,9 @@ edition = "2024"
 proc-macro = true
 
 [dependencies]
-heck = "0.5.0"
-proc-macro2.workspace = true
+crusty_trait_macro.workspace = true
 quote.workspace = true
-syn = {workspace = true, features = ["full"]}
+syn.workspace = true
 
 [lints]
 workspace = true

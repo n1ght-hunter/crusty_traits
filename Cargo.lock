@@ -153,8 +153,7 @@ version = "0.1.0"
 name = "crusty_traits_macros"
 version = "0.1.0"
 dependencies = [
- "heck",
- "proc-macro2",
+ "crusty_trait_macro",
  "quote",
  "syn",
 ]

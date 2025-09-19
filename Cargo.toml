@@ -28,6 +28,7 @@ members = [
 
 crusty_traits_macros = { path = "macros" }
 crusty_traits_core = { path = "crates/crusty_traits_core" }
+crusty_trait_macro = { path = "crates/crusty_trait_macro" }
 # cbindgen = "0.28.0"
 # fork to allow use of expand in stable toolchain by passing RUSTCBOOTSTRAP=1 to cargo expand
 cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
