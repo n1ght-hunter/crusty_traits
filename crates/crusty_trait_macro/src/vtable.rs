@@ -260,7 +260,7 @@ mod tests {
         let expected: syn::ItemStruct = parse_quote! {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
-            pub struct MyTraitVTable<T> {
+            pub struct MyTraitVTable<T: 'static> {
                 pub method1: unsafe extern "C" fn(CRef<Self>, T),
                 pub field_super_trait1: &'static SuperTrait1VTable<T>,
                 #[doc = "A function pointer to the drop function for the trait"]
