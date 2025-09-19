@@ -6,9 +6,13 @@ use crusty_traits_macros::crusty_trait;
 use crate::cslice::{CSlice, CSliceVTable};
 
 #[crusty_trait]
-trait CVec<V>: CSlice<V> {
+/// A trait that represents a C-compatible vector.
+pub trait CVec<V>: CSlice<V> {
+    /// Adds an element to the end of the vector.
     fn push(&mut self, value: V);
+    /// Extends the vector's capacity by the given amount.
     fn extend(&mut self, amount: usize);
+    /// Returns the capacity of the vector.
     fn capacity(&self) -> usize;
 }
 

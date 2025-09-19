@@ -9,8 +9,18 @@ style = "both"
 
 [parse]
 parse_deps = true
-include = ["shared_lib"]
+include = [
+    "shared_lib",
+    "crusty_traits_types",
+    "crusty_traits",
+    "crusty_traits_core",
+]
 
 
 [parse.expand]
-crates = ["shared_lib"]
+crates = [
+    "shared_lib",
+    "crusty_traits_types",
+    "crusty_traits",
+    "crusty_traits_core",
+]
