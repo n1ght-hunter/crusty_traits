@@ -137,7 +137,7 @@ pub fn impl_trait_for_c_ref_where_as_vtable(
             )
             .to_compile_error();
         };
-        let super_trait_ident = &super_trait.ident;
+        let super_trait_ident = vtable_ref.elem.as_ref();
 
         quote! { + AsVTable<&'static #super_trait_ident> }
     });
@@ -203,7 +203,7 @@ mod tests {
         let expected_output: syn::ItemImpl = parse_quote!(
             impl<GEN> MyTrait for CRepr<GEN>
             where
-                GEN: AsVTable<&'static MyTraitVTable> + CDrop + AsVTable<&'static SuperTrait>,
+                GEN: AsVTable<&'static MyTraitVTable> + CDrop + AsVTable<&'static SuperTraitVTable>,
             {
                 fn my_method(&self, x: i32) -> i32 {
                     let methods: &'static MyTraitVTable = self.as_vtable();

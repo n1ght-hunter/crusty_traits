@@ -214,25 +214,6 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
         .params
         .push(parse_quote!(GEN: #trait_ident #renamed_generics + 'static));
 
-    let genrics_names = genrics_params
-        .params
-        .iter()
-        .map(|p| match p {
-            GenericParam::Lifetime(lifetime) => {
-                let ident = &lifetime.lifetime.ident;
-                quote! { #ident }
-            }
-            GenericParam::Type(type_param) => {
-                let ident = &type_param.ident;
-                quote! { #ident }
-            }
-            GenericParam::Const(const_param) => {
-                let ident = &const_param.ident;
-                quote! { #ident }
-            }
-        })
-        .collect::<Vec<_>>();
-
     parse_quote! {
         impl #static_generics #vtable_ident #genrics {
             /// Creates a new vtable for the type GEN that implements the trait

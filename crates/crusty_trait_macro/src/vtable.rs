@@ -71,17 +71,40 @@ pub fn create_vtable(
         })
         .collect::<Vec<_>>();
 
+    let mut needs_statlic = Vec::new();
+
     let super_trait_fields = super_traits
         .iter()
-        .map(|super_trait| Field {
-            attrs: vec![],
-            vis: Visibility::Public(Default::default()),
-            mutability: syn::FieldMutability::None,
-            ident: Some(super_trait.field_ident.clone()),
-            colon_token: Some(Default::default()),
-            ty: super_trait.vtable_ty.clone(),
+        .map(|super_trait| {
+            needs_statlic.extend(super_trait.generics.iter().cloned());
+            Field {
+                attrs: vec![],
+                vis: Visibility::Public(Default::default()),
+                mutability: syn::FieldMutability::None,
+                ident: Some(super_trait.field_ident.clone()),
+                colon_token: Some(Default::default()),
+                ty: super_trait.vtable_ty.clone(),
+            }
         })
         .collect::<Vec<_>>();
+
+    needs_statlic.sort();
+    needs_statlic.dedup();
+    needs_statlic.into_iter().for_each(|generic| {
+        if let Some(param) = vtable.generics.params.iter_mut().find(|param| match param {
+            syn::GenericParam::Type(type_param) => type_param.ident == generic,
+            _ => false,
+        }) {
+            if let syn::GenericParam::Type(type_param) = param
+                && !type_param.bounds.iter().any(|b| match b {
+                    syn::TypeParamBound::Lifetime(lifetime) => lifetime.ident == "static",
+                    _ => false,
+                })
+            {
+                type_param.bounds.push(parse_quote!( 'static ));
+            }
+        }
+    });
 
     fields.extend(super_trait_fields);
 

@@ -2,7 +2,13 @@ use syn::parse_quote;
 
 pub fn impl_cdrop_for_vtable(vtable: &syn::ItemStruct) -> syn::Item {
     let name = &vtable.ident;
-    let generics = &vtable.generics;
+    let mut generics = vtable.generics.clone();
+    // Clear bounds from generics
+    generics.params.iter_mut().for_each(|param| {
+        if let syn::GenericParam::Type(type_param) = param {
+            type_param.bounds.clear();
+        }
+    });
 
     parse_quote! {
         impl #generics CDrop for #name #generics {
