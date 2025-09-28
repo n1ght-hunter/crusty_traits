@@ -1,8 +1,7 @@
 #![allow(missing_docs)]
 
-mod crust_trait;
-
-use crust_trait::impl_crusty_trait;
+use crusty_trait_macro::impl_crusty_trait;
+use quote::ToTokens;
 use syn::ItemTrait;
 
 #[proc_macro_attribute]
@@ -12,5 +11,5 @@ pub fn crusty_trait(
 ) -> proc_macro::TokenStream {
     let input = syn::parse_macro_input!(input as ItemTrait);
 
-    impl_crusty_trait(input).into()
+    impl_crusty_trait(input).to_token_stream().into()
 }

@@ -1,0 +1,3 @@
+[tools]
+cargo-make = "0.37.24"
+clang = "9.0.1"

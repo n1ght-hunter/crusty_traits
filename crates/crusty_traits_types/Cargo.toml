@@ -1,17 +1,15 @@
 [package]
-name = "crusty_traits_macros"
+name = "crusty_traits_types"
 version = "0.1.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
 
-[lib]
-proc-macro = true
-
 [dependencies]
-crusty_trait_macro.workspace = true
-quote.workspace = true
-syn.workspace = true
+crusty_traits_macros.workspace = true
+crusty_traits_core.workspace = true
+serde.workspace = true
+
 
 [lints]
 workspace = true

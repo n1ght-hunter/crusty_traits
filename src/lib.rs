@@ -1,25 +1,20 @@
 //! This crate provides a means of creating C-compatible vtables for Rust traits.
 //!
 
-mod trait_wrapper;
-pub use trait_wrapper::*;
-
+pub use crusty_traits_core::*;
 pub use crusty_traits_macros::crusty_trait;
 
 /// Modules that exports all the necessary types and traits for FFI.
 pub mod prelude {
-    pub use crate::crusty_trait;
-    pub use crate::CRepr;
+    pub use crate::AsVTable;
+    pub use crate::CDrop;
     pub use crate::CRef;
     pub use crate::CRefMut;
-    pub use crate::CDrop;
+    pub use crate::CRepr;
+    pub use crate::crusty_trait;
 }
 
-/// A trait that represents dropping a Rust object in a C-compatible way.
-pub trait CDrop {
-    /// Drops the object represented by the given `CRepr`.
-    fn drop(repr: CRefMut<Self>);
-}
+pub use crusty_traits_types as types;
 
 #[cfg(test)]
 mod tests {
@@ -80,5 +75,3 @@ mod tests {
         }
     }
 }
-
-

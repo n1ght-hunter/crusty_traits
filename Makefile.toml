@@ -1,0 +1,109 @@
+[config]
+default_to_workspace = false
+
+# Project-specific tasks that extend cargo-make defaults
+
+[tasks.miri-test]
+description = "Run tests with miri"
+command = "cargo"
+args = ["+nightly", "miri", "test", "--all-features", "--all"]
+
+[tasks.test-all]
+description = "Run both cargo tests and miri tests"
+dependencies = ["test", "miri-test"]
+
+[tasks.build-cbindgen]
+description = "Generate C bindings using cbindgen"
+script_runner = "@rust"
+script = '''
+//! ```cargo
+//! [dependencies]
+//! cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
+//! serde = { version = "1.0", features = ["derive", "std"] }
+//! ```
+use cbindgen::Config;
+
+fn main() {
+    let config = Config::from_file("tests/cbindgen.toml")
+        .expect("Failed to load cbindgen config");
+
+    cbindgen::Builder::new()
+        .with_crate_and_name("testing_crates/shared_lib", "shared_lib")
+        .with_config(config)
+        .generate()
+        .expect("Unable to generate bindings")
+        .write_to_file("tests/c/include/cbindgen.h");
+}
+'''
+
+[tasks.shared-lib]
+description = "Build the shared library for C bindings"
+command = "cargo"
+args = ["build", "--manifest-path", "testing_crates/shared_lib/Cargo.toml", "--release"]
+
+[tasks.build-c-lib]
+description = "Build C shared library using Zig"
+dependencies = ["build-cbindgen"]
+script_runner = "@duckscript"
+script = '''
+mkdir target/c
+
+if is_windows
+    lib_ext = set ".dll"
+elseif is_macos
+    lib_ext = set ".dylib"
+else
+    lib_ext = set ".so"
+end
+
+# Compile shared library using clang directly
+output_file = set "./target/c/libshared${lib_ext}"
+exec --fail-on-error clang -shared -O3 tests/c/lib/lib.c -I tests/c/lib -o ${output_file}
+
+echo "Built C shared library at ${output_file}"
+'''
+
+[tasks.build-c-bin]
+description = "Build C binary using Zig"
+dependencies = ["build-cbindgen", "shared-lib"]
+script_runner = "@duckscript"
+script = '''
+mkdir target/c
+
+if is_windows
+    bin_ext = set ".exe"
+else
+    bin_ext = set ""
+end
+
+# Compile binary using Zig
+output_file = set "target/c/main${bin_ext}"
+exec --fail-on-error clang -O3 -o ${output_file} tests/c/src/main.c -I tests/c/include -L target/release -l./target/release/shared_lib.dll
+
+echo "Built C binary at ${output_file}"
+'''
+
+[tasks.build-c]
+description = "Build all C components (library and binary)"
+dependencies = ["build-c-lib", "build-c-bin"]
+
+[tasks.ci-extended]
+description = "Extended CI pipeline with miri and C bindings"
+dependencies = ["format", "clippy", "build", "test-all", "build-c"]
+
+[tasks.clean-c]
+description = "Clean generated C bindings and libraries"
+script_runner = "@duckscript"
+script = '''
+rm target/c
+rm tests/c/include/cbindgen.h
+'''
+
+[tasks.rebuild-c]
+description = "Clean and rebuild C bindings and library"
+dependencies = ["clean-c", "build-c"]
+
+
+# Integration tests
+[tasks.test]
+dependencies = ["build-c", "shared-lib"]
