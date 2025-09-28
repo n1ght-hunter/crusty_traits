@@ -6,7 +6,6 @@ tab_width = 4
 language = "c"
 style = "both"
 
-
 [parse]
 parse_deps = true
 include = [

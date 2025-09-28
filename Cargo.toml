@@ -21,7 +21,6 @@ members = [
     "crates/crusty_traits_core",
     "crates/crusty_traits_types",
     "macros",
-    "scripts",
     "testing_crates/*",
 ]
 
@@ -44,7 +43,8 @@ syn = "2"
 cc = "1.2"
 libloading = "0.8"
 prettyplease = "0.2.37"
-serde = "=1.0.188"  # Pin to older version compatible with the fork
+serde = "=1.0.188"      # Pin to older version compatible with the fork
+
 
 [workspace.lints.clippy]
 doc_markdown = "warn"

@@ -2,12 +2,16 @@
 name = "shared_lib"
 version = "0.1.0"
 edition = "2024"
+publish = false
 
 [lib]
-crate-type = ["cdylib", "staticlib", "rlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 crusty_traits.workspace = true
+cc = "1.2"
+libloading = "0.8"
 
 [lints]
 workspace = true
+

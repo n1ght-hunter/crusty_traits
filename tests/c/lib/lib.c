@@ -1,8 +1,7 @@
 
 #define MYLIBRARY_EXPORTS
 
-#include "basic_c.h"
-#include "../include/cbindgen.h"
+#include "lib.h"
 #include <stdio.h>
 
 void hello_world() {

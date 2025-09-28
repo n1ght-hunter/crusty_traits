@@ -1,7 +1,7 @@
 use heck::ToSnakeCase;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{parse_quote, GenericParam, Ident, ReturnType, Type, TypeParamBound};
+use syn::{GenericParam, Ident, ReturnType, Type, TypeParamBound, parse_quote};
 
 pub fn map_method_ident(ident: Ident) -> Ident {
     Ident::new(&format!("{}METHOD", ident), ident.span())
@@ -100,7 +100,6 @@ pub fn map_ty(ty: &mut Type, mapper: &dyn Fn(&mut syn::TypePath)) {
         _ => {}
     };
 }
-
 
 pub fn map_ty_genrics(ty: &mut Type, mapper: &dyn Fn(&mut syn::Type)) {
     match ty {

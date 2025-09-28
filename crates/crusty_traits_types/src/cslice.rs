@@ -34,7 +34,6 @@ pub trait CSliceExt<V>: CSlice<V> {
 
 impl<T, V> CSliceExt<V> for T where T: CSlice<V> {}
 
-
 impl<V> CSlice<V> for [V] {
     fn as_ptr(&self) -> *const V {
         self.as_ptr()

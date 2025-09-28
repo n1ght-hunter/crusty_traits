@@ -27,4 +27,3 @@ pub unsafe extern "C" fn create_vector() -> CRepr<CVecVTable<i32>> {
     let vec: Vec<i32> = Vec::new();
     CVecVTable::new_boxed(vec)
 }
-
