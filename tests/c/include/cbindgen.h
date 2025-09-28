@@ -7,35 +7,30 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct Inner_CVecVTable {
-    CVecVTable *vtable;
+/**
+ * A reference to a C-compatible object.
+ */
+typedef struct Inner_CVecVTable_i32 CRefMut_CVecVTable_i32;
+
+/**
+ * A reference to a C-compatible object.
+ */
+typedef struct Inner_CVecVTable_i32 CRef_CVecVTable_i32;
+
+typedef struct Inner_CSliceVTable_i32 {
+    struct CSliceVTable_i32 *vtable;
     uint8_t *ptr;
-} Inner_CVecVTable;
+} Inner_CSliceVTable_i32;
 
 /**
  * A reference to a C-compatible object.
  */
-typedef struct Inner_CVecVTable CRefMut_CVecVTable;
+typedef struct Inner_CSliceVTable_i32 CRef_CSliceVTable_i32;
 
 /**
  * A reference to a C-compatible object.
  */
-typedef struct Inner_CVecVTable CRef_CVecVTable;
-
-typedef struct Inner_CSliceVTable {
-    CSliceVTable *vtable;
-    uint8_t *ptr;
-} Inner_CSliceVTable;
-
-/**
- * A reference to a C-compatible object.
- */
-typedef struct Inner_CSliceVTable CRef_CSliceVTable;
-
-/**
- * A reference to a C-compatible object.
- */
-typedef struct Inner_CSliceVTable CRefMut_CSliceVTable;
+typedef struct Inner_CSliceVTable_i32 CRefMut_CSliceVTable_i32;
 
 /**
  *A repr C vtable for the trait CSlice
@@ -44,15 +39,15 @@ typedef struct CSliceVTable_i32 {
     /**
      * Returns a pointer to the first element of the slice.
      */
-    const int32_t *(*as_ptr)(CRef_CSliceVTable);
+    const int32_t *(*as_ptr)(CRef_CSliceVTable_i32);
     /**
      * Returns the length of the slice.
      */
-    uintptr_t (*len)(CRef_CSliceVTable);
+    uintptr_t (*len)(CRef_CSliceVTable_i32);
     /**
      *A function pointer to the drop function for the trait
      */
-    void (*drop)(CRefMut_CSliceVTable);
+    void (*drop)(CRefMut_CSliceVTable_i32);
 } CSliceVTable_i32;
 
 /**
@@ -62,20 +57,20 @@ typedef struct CVecVTable_i32 {
     /**
      * Adds an element to the end of the vector.
      */
-    void (*push)(CRefMut_CVecVTable, int32_t);
+    void (*push)(CRefMut_CVecVTable_i32, int32_t);
     /**
      * Extends the vector's capacity by the given amount.
      */
-    void (*extend)(CRefMut_CVecVTable, uintptr_t);
+    void (*extend)(CRefMut_CVecVTable_i32, uintptr_t);
     /**
      * Returns the capacity of the vector.
      */
-    uintptr_t (*capacity)(CRef_CVecVTable);
+    uintptr_t (*capacity)(CRef_CVecVTable_i32);
     const struct CSliceVTable_i32 *field_c_slice;
     /**
      *A function pointer to the drop function for the trait
      */
-    void (*drop)(CRefMut_CVecVTable);
+    void (*drop)(CRefMut_CVecVTable_i32);
 } CVecVTable_i32;
 
 typedef struct Inner_CVecVTable_i32 {
@@ -87,40 +82,6 @@ typedef struct Inner_CVecVTable_i32 {
  * A trait that represents a buffer that can be converted to a C-compatible slice.
  */
 typedef struct Inner_CVecVTable_i32 CRepr_CVecVTable_i32;
-
-/**
- * A reference to a C-compatible object.
- */
-typedef struct Inner_SharedLibTraitVTable CRef_SharedLibTraitVTable;
-
-/**
- * A reference to a C-compatible object.
- */
-typedef struct Inner_SharedLibTraitVTable CRefMut_SharedLibTraitVTable;
-
-/**
- *A repr C vtable for the trait SharedLibTrait
- */
-typedef struct SharedLibTraitVTable {
-    /**
-     * Get a message from the implementation.
-     */
-    int32_t (*get_message)(CRef_SharedLibTraitVTable);
-    /**
-     *A function pointer to the drop function for the trait
-     */
-    void (*drop)(CRefMut_SharedLibTraitVTable);
-} SharedLibTraitVTable;
-
-typedef struct Inner_SharedLibTraitVTable {
-    struct SharedLibTraitVTable *vtable;
-    uint8_t *ptr;
-} Inner_SharedLibTraitVTable;
-
-/**
- * A trait that represents a buffer that can be converted to a C-compatible slice.
- */
-typedef struct Inner_SharedLibTraitVTable CRepr_SharedLibTraitVTable;
 
 /**
  * print "Hello from the shared library!"
@@ -141,8 +102,3 @@ intptr_t multiply(intptr_t a, intptr_t b);
  * Create a new C-compatible vector of i32 and return it.
  */
 CRepr_CVecVTable_i32 create_vector(void);
-
-/**
- * Create a new implementation of the SharedLibTrait and return it as a CRepr.
- */
-CRepr_SharedLibTraitVTable create_shared_lib_trait(void);

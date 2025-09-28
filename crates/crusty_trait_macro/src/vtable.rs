@@ -1,7 +1,7 @@
 pub mod methods;
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{ToTokens, quote};
 
 use syn::{
     BareFnArg, Field, ItemStruct, LitStr, Token, TraitItem, Type, TypeBareFn, Visibility,
@@ -36,6 +36,9 @@ pub fn create_vtable(
         semi_token: None,
     };
 
+    let vtable_ident = &vtable.ident;
+    let generics = &vtable.generics;
+
     let mut fields = input
         .items
         .iter()
@@ -56,7 +59,8 @@ pub fn create_vtable(
                 }),
                 fn_token: Default::default(),
                 paren_token: Default::default(),
-                inputs: map_inputs(&method.sig.inputs, None).collect(),
+                inputs: map_inputs(&method.sig.inputs, Some(quote! { #vtable_ident #generics}))
+                    .collect(),
                 variadic: None,
                 output: method.sig.output.clone(),
             };
@@ -70,6 +74,11 @@ pub fn create_vtable(
             }
         })
         .collect::<Vec<_>>();
+
+    let drop_field: Field = parse_quote!(
+        #[doc = "A function pointer to the drop function for the trait"]
+        pub drop: unsafe extern "C" fn(CRefMut<#vtable_ident #generics>)
+    );
 
     let mut needs_statlic = Vec::new();
 
@@ -108,10 +117,6 @@ pub fn create_vtable(
 
     fields.extend(super_trait_fields);
 
-    let drop_field: Field = parse_quote!(
-        #[doc = "A function pointer to the drop function for the trait"]
-        pub drop: unsafe extern "C" fn(CRefMut<Self>)
-    );
     fields.push(drop_field);
 
     vtable.fields = syn::Fields::Named(syn::FieldsNamed {

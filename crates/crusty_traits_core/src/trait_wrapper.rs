@@ -93,7 +93,10 @@ impl<T: CDrop> CRepr<T> {
 impl<T: CDrop + ?Sized> CRepr<T> {
     /// Maps the vtable to a new type using the provided function.
     #[allow(unsafe_code)]
-    pub unsafe fn as_cref_with_methods<U: ?Sized>(&self, methods: NonNull<U>) -> CRef<U> {
+    pub unsafe fn as_cref_with_methods<'a, U: ?Sized>(
+        &'a self,
+        methods: NonNull<U>,
+    ) -> CRef<'a, U> {
         CRef {
             inner: unsafe { self.inner.map_vtable(|_| methods) },
             phantom: std::marker::PhantomData,
@@ -102,10 +105,10 @@ impl<T: CDrop + ?Sized> CRepr<T> {
 
     /// Maps the vtable to a new type using the provided function.
     #[allow(unsafe_code)]
-    pub unsafe fn as_cref_mut_with_methods<U: ?Sized>(
-        &mut self,
+    pub unsafe fn as_cref_mut_with_methods<'a, U: ?Sized>(
+        &'a mut self,
         methods: NonNull<U>,
-    ) -> CRefMut<U> {
+    ) -> CRefMut<'a, U> {
         CRefMut {
             inner: unsafe { self.inner.map_vtable(|_| methods) },
             phantom: std::marker::PhantomData,
@@ -126,7 +129,7 @@ impl<T: CDrop + ?Sized> CRepr<T> {
     }
 
     /// Returns a cref
-    pub fn as_cref(&self) -> CRef<T> {
+    pub fn as_cref<'a>(&'a self) -> CRef<'a, T> {
         CRef {
             inner: self.inner,
             phantom: std::marker::PhantomData,
@@ -134,7 +137,7 @@ impl<T: CDrop + ?Sized> CRepr<T> {
     }
 
     /// Returns a cref mut
-    pub fn as_cref_mut(&mut self) -> CRefMut<T> {
+    pub fn as_cref_mut<'a>(&'a mut self) -> CRefMut<'a, T> {
         CRefMut {
             inner: self.inner,
             phantom: std::marker::PhantomData,
