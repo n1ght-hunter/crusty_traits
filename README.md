@@ -114,7 +114,8 @@ impl MyTraitVTable {
 }
 impl MyTrait for CRepr<MyTraitVTable> {
     fn method1(&self) {
-        #[allow(unsafe_code)] unsafe { (self.get_vtable().method1)(self.as_cref()) }
+        #[allow(unsafe_code)] 
+        unsafe { (self.get_vtable().method1)(self.as_cref()) }
     }
     fn method2(&mut self, value: i32) -> i32 {
         #[allow(unsafe_code)]
