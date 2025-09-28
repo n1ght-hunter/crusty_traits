@@ -2,7 +2,9 @@
 ## c <-> rust traits
 
 A crate that creates a macro and supporting code to allow for traits to ffi safe using c interfaces.
-
+> [!WARNING]
+> This crate uses unsafe code and may be unsound if used incorrectly. Use at your own risk.
+> If any issues are found please open an issue or a PR.
 
 ## Usage
 Add the following to your Cargo.toml
