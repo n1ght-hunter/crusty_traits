@@ -1,7 +1,7 @@
 pub mod methods;
 
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use quote::quote;
 
 use syn::{
     BareFnArg, Field, ItemStruct, LitStr, Token, TraitItem, Type, TypeBareFn, Visibility,
@@ -87,7 +87,10 @@ pub fn create_vtable(
         .map(|super_trait| {
             needs_statlic.extend(super_trait.generics.iter().cloned());
             Field {
-                attrs: vec![],
+                attrs: vec![doc_attribute(format!(
+                    "A vtable point for {}",
+                    super_trait.ident
+                ))],
                 vis: Visibility::Public(Default::default()),
                 mutability: syn::FieldMutability::None,
                 ident: Some(super_trait.field_ident.clone()),

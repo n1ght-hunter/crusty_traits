@@ -76,7 +76,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
         }
     };
 
-    let map_genrics = |param: &mut syn::Type| {
+    let map_genrics = |param: &mut Type| {
         if let Type::Path(type_path) = param {
             mapper(type_path);
         }

@@ -3,9 +3,10 @@ use syn::{Ident, ItemTrait, Type, parse_quote};
 
 use crate::{
     IGNORE_SUPER_TRAITS,
-    utils::{map_field_ident, map_vec_to_generics, map_vtable_ident},
+    utils::{map_field_ident, map_vtable_ident},
 };
 
+#[allow(dead_code)]
 pub struct SuperTrait {
     pub ident: Ident,
     pub vtable_ty: Type,

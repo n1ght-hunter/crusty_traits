@@ -1,6 +1,4 @@
 use heck::ToSnakeCase;
-use proc_macro2::TokenStream;
-use quote::quote;
 use syn::{GenericParam, Ident, ReturnType, Type, TypeParamBound, parse_quote};
 
 pub fn map_method_ident(ident: Ident) -> Ident {
@@ -28,15 +26,6 @@ pub fn doc_attribute(doc: impl Into<String>) -> syn::Attribute {
     let doc: String = doc.into();
     parse_quote! {
        #[doc = #doc]
-    }
-}
-
-pub fn map_vec_to_generics(vec: &Vec<Ident>) -> TokenStream {
-    if vec.is_empty() {
-        quote! {}
-    } else {
-        let generics = vec.iter();
-        quote! { < #( #generics ),* > }
     }
 }
 
@@ -101,7 +90,7 @@ pub fn map_ty(ty: &mut Type, mapper: &dyn Fn(&mut syn::TypePath)) {
     };
 }
 
-pub fn map_ty_genrics(ty: &mut Type, mapper: &dyn Fn(&mut syn::Type)) {
+pub fn map_ty_genrics(ty: &mut Type, mapper: &dyn Fn(&mut Type)) {
     match ty {
         Type::Reference(type_ref) => {
             map_ty_genrics(&mut type_ref.elem, &mapper);
