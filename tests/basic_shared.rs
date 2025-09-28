@@ -14,7 +14,7 @@ fn top_level() -> PathBuf {
 
 fn c_dll_path() -> PathBuf {
     let top_dir = top_level();
-    top_dir.join("target").join("c").join("basic_c.dll")
+    top_dir.join("target").join("c").join("libshared.dll")
 }
 
 fn rust_dll_path() -> PathBuf {

@@ -78,7 +78,7 @@ end
 
 # Compile binary using Zig
 output_file = set "target/c/main${bin_ext}"
-exec --fail-on-error clang -O3 -o ${output_file} tests/c/src/main.c -I tests/c/include -L target/release -lshared_lib
+exec --fail-on-error clang -O3 -o ${output_file} tests/c/src/main.c -I tests/c/include -L target/release -l./target/release/shared_lib.dll
 
 echo "Built C binary at ${output_file}"
 '''
@@ -105,8 +105,5 @@ dependencies = ["clean-c", "build-c"]
 
 
 # Integration tests
-[tasks.test-integration]
-description = "Run integration tests"
-command = "cargo"
-args = ["test", "--tests"]
-dependencies = ["build-c"]
+[tasks.test]
+dependencies = ["build-c", "shared-lib"]
