@@ -2,6 +2,8 @@
 name = "crusty_traits"
 version = "0.1.0"
 edition = "2024"
+authors.workspace = true
+license.workspace = true
 
 [dependencies]
 crusty_traits_macros.workspace = true
@@ -23,6 +25,10 @@ members = [
     "macros",
     "testing_crates/*",
 ]
+
+[workspace.package]
+authors = ["n1ght-hunter <samuelhuntnz@gmail.com>"]
+license = "MPL-2.0"
 
 [workspace.dependencies]
 
