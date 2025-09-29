@@ -4,17 +4,17 @@ use syn::{
 };
 
 use crate::{
-    utils::{self, map_genrics_ident},
+    utils::{self, map_generics_ident},
     vtable::map_inputs,
 };
 
 pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item {
-    let genrics = &input.generics;
+    let generics = &input.generics;
     let trait_ident = &input.ident;
     let vtable_ident = &vtable.ident;
-    let mut renamed_generics = genrics.clone();
+    let mut renamed_generics = generics.clone();
 
-    let mut static_generics = genrics.clone();
+    let mut static_generics = generics.clone();
 
     static_generics.params.iter_mut().for_each(|param| {
         if let GenericParam::Type(type_param) = param {
@@ -31,7 +31,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
     });
 
     renamed_generics.params.iter_mut().for_each(|g| {
-        map_genrics_ident(g, &utils::map_method_ident);
+        map_generics_ident(g, &utils::map_method_ident);
     });
 
     let mut method_generics = renamed_generics.clone();
@@ -40,7 +40,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
         .params
         .push(parse_quote!(GEN: #trait_ident #renamed_generics));
 
-    let mut method_generics_names = genrics
+    let mut method_generics_names = generics
         .params
         .iter()
         .map(|p| match p {
@@ -62,7 +62,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
     method_generics_names.push(Ident::new("GEN", proc_macro2::Span::call_site()).to_token_stream());
 
     let mapper = |ty: &mut syn::TypePath| {
-        if genrics.params.iter().any(|p| {
+        if generics.params.iter().any(|p| {
             if let GenericParam::Type(type_param) = p
                 && let Some(ty_path) = ty.path.get_ident()
             {
@@ -76,7 +76,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
         }
     };
 
-    let map_genrics = |param: &mut Type| {
+    let map_generics = |param: &mut Type| {
         if let Type::Path(type_path) = param {
             mapper(type_path);
         }
@@ -144,7 +144,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
 
             if let syn::ReturnType::Type(_, ref mut ty) = output {
                 utils::map_ty(ty, &mapper);
-                utils::map_ty_genrics(ty, &map_genrics);
+                utils::map_ty_generics(ty, &map_generics);
             }
 
             quote! {
@@ -193,7 +193,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
         quote! {}
     };
 
-    let vtable_creater = quote! {
+    let vtable_creator = quote! {
     #vtable_ident {
         #methods
 
@@ -208,22 +208,22 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
        },
       }};
 
-    let mut genrics_params = renamed_generics.clone();
+    let mut generics_params = renamed_generics.clone();
 
-    genrics_params
+    generics_params
         .params
         .push(parse_quote!(GEN: #trait_ident #renamed_generics + 'static));
 
     parse_quote! {
-        impl #static_generics #vtable_ident #genrics {
+        impl #static_generics #vtable_ident #generics {
             /// Creates a new vtable for the type GEN that implements the trait
-            pub fn new_boxed<GEN: #trait_ident #genrics + 'static>(input: GEN) -> CRepr<#vtable_ident #genrics> {
+            pub fn new_boxed<GEN: #trait_ident #generics + 'static>(input: GEN) -> CRepr<#vtable_ident #generics> {
                 let vtable  = #vtable_ident::create_vtable::<GEN>();
                 CRepr::new_boxed(vtable, input)
             }
 
             /// Creates a new vtable for the type GEN then store in a static variable in the heap
-            pub fn create_vtable<GEN: #trait_ident #genrics + 'static>() -> &'static #vtable_ident #genrics {
+            pub fn create_vtable<GEN: #trait_ident #generics + 'static>() -> &'static #vtable_ident #generics {
                    static FN_MAP: std::sync::LazyLock<std::sync::Mutex<std::collections::HashMap<std::any::TypeId, &'static (dyn std::any::Any + Send + Sync)>>> =
                         std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
 
@@ -231,7 +231,7 @@ pub fn impl_vtable_methods(input: &ItemTrait, vtable: &ItemStruct) -> syn::Item 
 
                     let mut map = FN_MAP.lock().unwrap();
                     let entry = map.entry(type_id).or_insert_with(|| {
-                        let vtable = Box::new(#vtable_creater);
+                        let vtable = Box::new(#vtable_creator);
                         Box::leak(vtable)
                     });
                     entry.downcast_ref().unwrap()

@@ -1,7 +1,7 @@
 # Crusty Traits 
 ## c <-> rust traits
 
-A crate that creates a macro and supporting code to allow for traits to ffi safe using c interfaces.
+A crate that creates a macro and supporting code to allow for traits to FFI safe using c interfaces.
 > [!WARNING]
 > This crate uses unsafe code and may be unsound if used incorrectly. Use at your own risk.
 > If any issues are found please open an issue or a PR.
@@ -154,7 +154,7 @@ where
 
 ## Crate Details
 This crate provides a macro `crusty_trait` that generates the necessary boilerplate code to create a C-compatible vtable for a given Rust trait.
-This allows Rust traits to be used across FFI boundaries, making it easier use Rust shared libraries or plugins in C or other languages that can interface with C.
+This allows Rust traits to be used across FFI boundaries, making it easier to use Rust shared libraries or plugins in C or other languages that can interface with C.
 Each trait that is annotated with `crusty_trait` will have a corresponding vtable struct generated, along with implementations for `CRepr` and `CDrop` to manage the memory and lifecycle of the trait objects.
 The generated vtable struct will contain function pointers for each method in the trait, as well as a drop function to properly clean up the trait object when it is no longer needed. 
-The trait is also implemented for `CRepr<MyTraitVTable>` and any `CRepr<GEN>` where `GEN` implements `AsVTable<&'static MyTraitVTable>`(used for super/sub traits) and `CDrop`, allowing for seamless usage of the trait across FFI boundaries in rust code.
+The trait is also implemented for `CRepr<MyTraitVTable>` and any `CRepr<GEN>` where `GEN` implements `AsVTable<&'static MyTraitVTable>`(used for super/sub traits) and `CDrop`, allowing for seamless usage of the trait across FFI boundaries in Rust code.

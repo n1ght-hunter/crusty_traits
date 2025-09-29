@@ -29,7 +29,7 @@ pub fn doc_attribute(doc: impl Into<String>) -> syn::Attribute {
     }
 }
 
-pub fn map_genrics_ident(param: &mut GenericParam, mapper: &dyn Fn(Ident) -> Ident) {
+pub fn map_generics_ident(param: &mut GenericParam, mapper: &dyn Fn(Ident) -> Ident) {
     match param {
         GenericParam::Lifetime(lifetime_param) => {
             lifetime_param.lifetime.ident = mapper(lifetime_param.lifetime.ident.clone());
@@ -90,24 +90,24 @@ pub fn map_ty(ty: &mut Type, mapper: &dyn Fn(&mut syn::TypePath)) {
     };
 }
 
-pub fn map_ty_genrics(ty: &mut Type, mapper: &dyn Fn(&mut Type)) {
+pub fn map_ty_generics(ty: &mut Type, mapper: &dyn Fn(&mut Type)) {
     match ty {
         Type::Reference(type_ref) => {
-            map_ty_genrics(&mut type_ref.elem, &mapper);
+            map_ty_generics(&mut type_ref.elem, &mapper);
         }
         Type::Array(type_array) => {
-            map_ty_genrics(&mut type_array.elem, &mapper);
+            map_ty_generics(&mut type_array.elem, &mapper);
         }
         Type::BareFn(type_bare_fn) => {
             type_bare_fn.inputs.iter_mut().for_each(|i| {
-                map_ty_genrics(&mut i.ty, &mapper);
+                map_ty_generics(&mut i.ty, &mapper);
             });
         }
         Type::Group(type_group) => {
-            map_ty_genrics(&mut type_group.elem, &mapper);
+            map_ty_generics(&mut type_group.elem, &mapper);
         }
         Type::Paren(type_paren) => {
-            map_ty_genrics(&mut type_paren.elem, &mapper);
+            map_ty_generics(&mut type_paren.elem, &mapper);
         }
         Type::Path(type_path) => {
             type_path
@@ -126,24 +126,24 @@ pub fn map_ty_genrics(ty: &mut Type, mapper: &dyn Fn(&mut Type)) {
                         parenthesized
                             .inputs
                             .iter_mut()
-                            .for_each(|input| map_ty_genrics(input, &mapper));
+                            .for_each(|input| map_ty_generics(input, &mapper));
                         if let ReturnType::Type(_, output) = &mut parenthesized.output {
-                            map_ty_genrics(output, &mapper);
+                            map_ty_generics(output, &mapper);
                         }
                     }
                     syn::PathArguments::None => {}
                 });
         }
         Type::Ptr(type_ptr) => {
-            map_ty_genrics(&mut type_ptr.elem, &mapper);
+            map_ty_generics(&mut type_ptr.elem, &mapper);
         }
         Type::Slice(type_slice) => {
-            map_ty_genrics(&mut type_slice.elem, &mapper);
+            map_ty_generics(&mut type_slice.elem, &mapper);
         }
 
         Type::Tuple(type_tuple) => {
             type_tuple.elems.iter_mut().for_each(|i| {
-                map_ty_genrics(i, &mapper);
+                map_ty_generics(i, &mapper);
             });
         }
 
