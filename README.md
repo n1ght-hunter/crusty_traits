@@ -151,3 +151,10 @@ where
 
 ```
 </details>
+
+## Crate Details
+This crate provides a macro `crusty_trait` that generates the necessary boilerplate code to create a C-compatible vtable for a given Rust trait.
+This allows Rust traits to be used across FFI boundaries, making it easier use Rust shared libraries or plugins in C or other languages that can interface with C.
+Each trait that is annotated with `crusty_trait` will have a corresponding vtable struct generated, along with implementations for `CRepr` and `CDrop` to manage the memory and lifecycle of the trait objects.
+The generated vtable struct will contain function pointers for each method in the trait, as well as a drop function to properly clean up the trait object when it is no longer needed. 
+The trait is also implemented for `CRepr<MyTraitVTable>` and any `CRepr<GEN>` where `GEN` implements `AsVTable<&'static MyTraitVTable>`(used for super/sub traits) and `CDrop`, allowing for seamless usage of the trait across FFI boundaries in rust code.
