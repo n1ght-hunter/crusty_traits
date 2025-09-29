@@ -1,7 +1,7 @@
 # Crusty Traits 
-## c <-> rust traits
+## C <-> Rust Traits
 
-A crate that creates a macro and supporting code to allow for traits to FFI safe using c interfaces.
+A crate that creates a macro and supporting code to allow for traits to be FFI-safe using C ABI.
 > [!WARNING]
 > This crate uses unsafe code and may be unsound if used incorrectly. Use at your own risk.
 > If any issues are found please open an issue or a PR.
@@ -10,7 +10,7 @@ A crate that creates a macro and supporting code to allow for traits to FFI safe
 Add the following to your Cargo.toml
 
 ```toml
-[dependencies]
+[dependencies]  
 crusty_traits = "0.1"
 ```
 
