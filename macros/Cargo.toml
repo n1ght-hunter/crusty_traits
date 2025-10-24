@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
+description = "Procedural macros for crusty_traits - FFI-safe trait generation"
+documentation = "https://docs.rs/crusty_traits_macros"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["macro", "proc-macro", "ffi", "traits", "codegen"]
 
 [lib]
 proc-macro = true

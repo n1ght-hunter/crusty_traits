@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
+description = "Internal procedural macro implementation for crusty_traits"
+documentation = "https://docs.rs/crusty_trait_macro"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["macro", "procedural", "codegen", "internal", "ffi"]
 
 [dependencies]
 heck = "0.5.0"

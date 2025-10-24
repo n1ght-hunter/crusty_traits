@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 authors.workspace = true
 license.workspace = true
+description = "C-compatible types for crusty_traits - FFI-safe vectors and slices"
+documentation = "https://docs.rs/crusty_traits_types"
+homepage.workspace = true
+repository.workspace = true
+keywords = ["ffi", "types", "c-compat", "vec", "slice"]
 
 [dependencies]
 crusty_traits_macros.workspace = true
