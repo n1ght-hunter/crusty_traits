@@ -1,4 +1,14 @@
 # Crusty Traits 
+
+<div align="center">
+
+[![Documentation](https://docs.rs/crusty_traits/badge.svg)](https://docs.rs/crusty_traits)
+[![Crates.io](https://img.shields.io/crates/v/crusty_traits.svg)](https://crates.io/crates/crusty_traits)
+[![License](https://img.shields.io/crates/l/crusty_traits.svg)](https://github.com/n1ght-hunter/crusty_traits/blob/master/LICENSE)
+[![Downloads](https://img.shields.io/crates/d/crusty_traits.svg)](https://crates.io/crates/crusty_traits)
+
+</div>
+
 ## C <-> Rust Traits
 
 A crate that creates a macro and supporting code to allow for traits to be FFI-safe using C ABI.
