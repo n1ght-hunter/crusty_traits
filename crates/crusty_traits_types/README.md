@@ -54,3 +54,7 @@ let cvec = CVec::from(vec![1, 2, 3, 4]);
 ## Documentation
 
 See the [API documentation](https://docs.rs/crusty_traits_types) for detailed usage information.
+
+## Your contributions
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the MPL-2.0 license, shall be licensed under MPL-2.0, without any additional terms or conditions.

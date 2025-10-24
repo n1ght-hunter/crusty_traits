@@ -168,3 +168,7 @@ This allows Rust traits to be used across FFI boundaries, making it easier to us
 Each trait that is annotated with `crusty_trait` will have a corresponding vtable struct generated, along with implementations for `CRepr` and `CDrop` to manage the memory and lifecycle of the trait objects.
 The generated vtable struct will contain function pointers for each method in the trait, as well as a drop function to properly clean up the trait object when it is no longer needed. 
 The trait is also implemented for `CRepr<MyTraitVTable>` and any `CRepr<GEN>` where `GEN` implements `AsVTable<&'static MyTraitVTable>`(used for super/sub traits) and `CDrop`, allowing for seamless usage of the trait across FFI boundaries in Rust code.
+
+## Your contributions
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the MPL-2.0 license, shall be licensed under MPL-2.0, without any additional terms or conditions.
