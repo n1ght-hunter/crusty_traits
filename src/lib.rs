@@ -1,10 +1,54 @@
-//! This crate provides a means of creating C-compatible vtables for Rust traits.
+//! # Crusty Traits
+//! ## C <-> Rust Traits
 //!
+//! A crate that creates a macro and supporting code to allow for traits to be FFI-safe using C ABI.
+//!
+//! > **Warning**: This crate uses unsafe code and may be unsound if used incorrectly. Use at your own risk.
+//! > If any issues are found please open an issue or a PR.
+//!
+//! ## Usage
+//!
+//! Add the following to your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! crusty_traits = "0.1"
+//! ```
+//!
+//! Then in your code:
+//!
+//! ```rust
+//! use crusty_traits::prelude::*;
+//!
+//! #[crusty_trait]
+//! pub trait MyTrait {
+//!     fn method1(&self);
+//!     fn method2(&mut self, value: i32) -> i32;
+//! }
+//! ```
+//!
+//! ## Crate Details
+//!
+//! This crate provides a macro `crusty_trait` that generates the necessary boilerplate code to create
+//! a C-compatible vtable for a given Rust trait. This allows Rust traits to be used across FFI boundaries,
+//! making it easier to use Rust shared libraries or plugins in C or other languages that can interface with C.
+//!
+//! Each trait that is annotated with `crusty_trait` will have a corresponding vtable struct generated,
+//! along with implementations for `CRepr` and `CDrop` to manage the memory and lifecycle of the trait objects.
+//! The generated vtable struct will contain function pointers for each method in the trait, as well as a
+//! drop function to properly clean up the trait object when it is no longer needed.
+//!
+//! The trait is also implemented for `CRepr<MyTraitVTable>` and any `CRepr<GEN>` where `GEN` implements
+//! `AsVTable<&'static MyTraitVTable>` (used for super/sub traits) and `CDrop`, allowing for seamless
+//! usage of the trait across FFI boundaries in Rust code.
 
 pub use crusty_traits_core::*;
 pub use crusty_traits_macros::crusty_trait;
 
-/// Modules that exports all the necessary types and traits for FFI.
+/// Prelude module that exports all the necessary types and traits for creating FFI-safe traits.
+/// 
+/// This module provides a convenient way to import all the core functionality needed to use
+/// the `crusty_trait` macro and work with C-compatible vtables.
 pub mod prelude {
     pub use crate::AsVTable;
     pub use crate::CDrop;

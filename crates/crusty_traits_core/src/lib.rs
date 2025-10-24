@@ -1,5 +1,17 @@
+//! # Crusty Traits Core
+//!
 //! This module provides core traits and types for creating C-compatible vtables for Rust traits.
-//! It includes the `CRef`, `CRefMut`, and `CDrop` traits
+//! It includes the fundamental building blocks: `CRef`, `CRefMut`, `CRepr`, `CDrop`, and `AsVTable`.
+//!
+//! ## Core Types
+//!
+//! - [`CRef`] - A C-compatible reference to a trait object
+//! - [`CRefMut`] - A C-compatible mutable reference to a trait object  
+//! - [`CRepr`] - A C-compatible representation of a trait object with its vtable
+//! - [`CDrop`] - A trait for dropping objects in a C-compatible way
+//! - [`AsVTable`] - A trait for converting types to vtables
+//!
+//! These types work together to enable safe FFI interactions with Rust trait objects.
 
 mod trait_wrapper;
 
