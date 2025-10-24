@@ -170,7 +170,7 @@ fn map_inputs(
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::test_utils::{item_to_file, item_to_pretty_string};
+    use crate::utils::test_utils::item_to_pretty_string;
 
     use super::*;
     use syn::parse_quote;
@@ -183,7 +183,7 @@ mod tests {
         let super_traits = SuperTraits::default();
         let vtable = create_vtable(&input, &super_traits).unwrap();
 
-        let expected: syn::ItemStruct = parse_quote! {
+        let expected: ItemStruct = parse_quote! {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
@@ -209,7 +209,7 @@ mod tests {
         let super_traits = SuperTraits::default();
         let vtable = create_vtable(&input, &super_traits).unwrap();
 
-        let expected: syn::ItemStruct = parse_quote! {
+        let expected: ItemStruct = parse_quote! {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
@@ -237,7 +237,7 @@ mod tests {
 
         let vtable = create_vtable(&input, &super_traits.super_traits).unwrap();
 
-        let expected: syn::ItemStruct = parse_quote! {
+        let expected: ItemStruct = parse_quote! {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
@@ -266,7 +266,7 @@ mod tests {
 
         let vtable = create_vtable(&input, &super_traits.super_traits).unwrap();
 
-        let expected: syn::ItemStruct = parse_quote! {
+        let expected: ItemStruct = parse_quote! {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable<T: 'static> {
