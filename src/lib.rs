@@ -46,7 +46,7 @@ pub use crusty_traits_core::*;
 pub use crusty_traits_macros::crusty_trait;
 
 /// Prelude module that exports all the necessary types and traits for creating FFI-safe traits.
-/// 
+///
 /// This module provides a convenient way to import all the core functionality needed to use
 /// the `crusty_trait` macro and work with C-compatible vtables.
 pub mod prelude {
