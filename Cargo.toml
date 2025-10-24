@@ -32,14 +32,14 @@ license = "MPL-2.0"
 
 [workspace.dependencies]
 
-crusty_traits_macros = { path = "macros" }
-crusty_traits_core = { path = "crates/crusty_traits_core" }
-crusty_trait_macro = { path = "crates/crusty_trait_macro" }
-crusty_traits_types = { path = "crates/crusty_traits_types" }
-crusty_traits = { path = "." }
+crusty_traits_macros = { path = "macros", version = "0.1.0" }
+crusty_traits_core = { path = "crates/crusty_traits_core", version = "0.1.0" }
+crusty_trait_macro = { path = "crates/crusty_trait_macro", version = "0.1.0" }
+crusty_traits_types = { path = "crates/crusty_traits_types", version = "0.1.0" }
+crusty_traits = { path = ".", version = "0.1.0" }
 # cbindgen = "0.28.0"
 # fork to allow use of expand in stable toolchain by passing RUSTCBOOTSTRAP=1 to cargo expand
-cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
+cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "f40fe05" }
 
 
 proc-macro2 = "1"
@@ -49,8 +49,7 @@ syn = "2"
 cc = "1.2"
 libloading = "0.8"
 prettyplease = "0.2.37"
-serde = "=1.0.188"      # Pin to older version compatible with the fork
-
+serde = "1"      # Pin to older version compatible with the fork
 
 [workspace.lints.clippy]
 doc_markdown = "warn"

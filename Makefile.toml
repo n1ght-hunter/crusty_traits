@@ -18,8 +18,8 @@ script_runner = "@rust"
 script = '''
 //! ```cargo
 //! [dependencies]
-//! cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "33fc6bf" }
-//! serde = { version = "1.0", features = ["derive", "std"] }
+//! cbindgen = { git = "https://github.com/n1ght-hunter/cbindgen.git", rev = "f40fe05" }
+//! serde = { version = "1", features = ["derive", "std"] }
 //! ```
 use cbindgen::Config;
 
