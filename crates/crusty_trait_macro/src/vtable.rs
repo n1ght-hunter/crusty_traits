@@ -188,7 +188,7 @@ mod tests {
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
                 #[doc = "A function pointer to the drop function for the trait"]
-                pub drop: unsafe extern "C" fn(CRefMut<Self>),
+                pub drop: unsafe extern "C" fn(CRefMut<MyTraitVTable>),
             }
         };
 
@@ -213,10 +213,10 @@ mod tests {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
-                pub method1: unsafe extern "C" fn(CRef<Self>),
-                pub method2: unsafe extern "C" fn(CRefMut<Self>, i32) -> i32,
+                pub method1: unsafe extern "C" fn(CRef<MyTraitVTable>),
+                pub method2: unsafe extern "C" fn(CRefMut<MyTraitVTable>, i32) -> i32,
                 #[doc = "A function pointer to the drop function for the trait"]
-                pub drop: unsafe extern "C" fn(CRefMut<Self>),
+                pub drop: unsafe extern "C" fn(CRefMut<MyTraitVTable>),
             }
         };
 
@@ -241,10 +241,11 @@ mod tests {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
-                pub method1: unsafe extern "C" fn(CRef<Self>),
+                pub method1: unsafe extern "C" fn(CRef<MyTraitVTable>),
+                #[doc = "A vtable point for SuperTrait1"]
                 pub field_super_trait1: &'static SuperTrait1VTable,
                 #[doc = "A function pointer to the drop function for the trait"]
-                pub drop: unsafe extern "C" fn(CRefMut<Self>),
+                pub drop: unsafe extern "C" fn(CRefMut<MyTraitVTable>),
             }
         };
 
@@ -269,10 +270,11 @@ mod tests {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable<T: 'static> {
-                pub method1: unsafe extern "C" fn(CRef<Self>, T),
+                pub method1: unsafe extern "C" fn(CRef<MyTraitVTable<T>>, T),
+                #[doc = "A vtable point for SuperTrait1"]
                 pub field_super_trait1: &'static SuperTrait1VTable<T>,
                 #[doc = "A function pointer to the drop function for the trait"]
-                pub drop: unsafe extern "C" fn(CRefMut<Self>),
+                pub drop: unsafe extern "C" fn(CRefMut<MyTraitVTable<T>>),
             }
         };
 

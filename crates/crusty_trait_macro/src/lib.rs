@@ -85,10 +85,10 @@ mod tests {
             #[repr(C)]
             #[doc = "A repr C vtable for the trait MyTrait"]
             pub struct MyTraitVTable {
-                pub my_method: unsafe extern "C" fn(CRef<Self>, i32) -> i32,
-                pub another_method: unsafe extern "C" fn(CRefMut<Self>, String),
+                pub my_method: unsafe extern "C" fn(CRef<MyTraitVTable>, i32) -> i32,
+                pub another_method: unsafe extern "C" fn(CRefMut<MyTraitVTable>, String),
                 #[doc = "A function pointer to the drop function for the trait"]
-                pub drop: unsafe extern "C" fn(CRefMut<Self>),
+                pub drop: unsafe extern "C" fn(CRefMut<MyTraitVTable>),
             }
         };
 
